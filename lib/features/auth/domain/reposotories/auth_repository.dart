@@ -59,19 +59,38 @@ class AuthRepository implements AuthRepositoryInterface{
   }*/
 
   @override
-  Future<Response> login({required String emailOrPhone, required String password, required String loginType, required String fieldType, bool alreadyInApp = false}) async {
+  Future<Response> login({
+    required String emailOrPhone,
+    required String password,
+    required String loginType,
+    required String fieldType,
+    bool alreadyInApp = false,
+  }) async {
     String guestId = getSharedPrefGuestId();
+
     Map<String, String> data = {
       "email_or_phone": emailOrPhone,
       "password": password,
       "login_type": loginType,
       "field_type": fieldType,
     };
-    if(guestId.isNotEmpty) {
+
+    if (guestId.isNotEmpty) {
       data.addAll({"guest_id": guestId});
     }
-    return await apiClient.postData(AppConstants.loginUri, data, handleError: false);
+
+    // 🔍 PRINT DETAILS
+    debugPrint('📤 LOGIN API REQUEST');
+    debugPrint('➡️ URL: ${AppConstants.baseUrl}${AppConstants.loginUri}');
+    debugPrint('➡️ BODY: ${jsonEncode(data)}');
+
+    return await apiClient.postData(
+      AppConstants.loginUri,
+      data,
+      handleError: false,
+    );
   }
+
 
   @override
   Future<Response> otpLogin({required String phone, required String otp, required String loginType, required String verified}) async {
@@ -80,6 +99,7 @@ class AuthRepository implements AuthRepositoryInterface{
       "phone": phone,
       "login_type": loginType,
     };
+    debugPrint('📤 LOGIN API REQUEST');
     if(guestId.isNotEmpty) {
       data.addAll({"guest_id": guestId});
     }

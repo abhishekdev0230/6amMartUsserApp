@@ -70,6 +70,8 @@ dependencies:
   dropdown_button2: ^2.3.9
   custom_info_window: ^1.0.1
   image_network: ^2.6.0
+  flutter_polyline_points: ^2.1.0
+  pretty_http_logger: ^1.0.5
 
 
 dependency_overrides:

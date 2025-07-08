@@ -6,11 +6,11 @@ import 'package:sixam_mart/util/images.dart';
 class AppConstants {
   static const String appName = '6amMart';
   static const double appVersion = 3.1;
-
   static const String fontFamily = 'Roboto';
   static const bool payInWevView = false;
   static const int balanceInputLen = 10;
-  static const String webHostedUrl = 'https://6ammart-web.6amtech.com';
+  // static const String webHostedUrl = 'https://6ammart-web.6amtech.com';
+  static const String webHostedUrl = 'https://6Kart.in';
   static const bool useReactWebsite = false;
 
   // static const String baseUrl = 'https://6ammart-admin.6amtech.com';
@@ -25,6 +25,7 @@ class AppConstants {
   static const String categoryItemUri = '/api/v1/categories/items/';
   static const String categoryStoreUri = '/api/v1/categories/stores/';
   static const String configUri = '/api/v1/config';
+  static const String getLocationDeliveryBoy = '/api/v1/location/fetch/';
   static const String trackUri = '/api/v1/customer/order/track?order_id=';
   static const String messageUri = '/api/v1/customer/message/get';
   static const String forgetPasswordUri = '/api/v1/auth/forgot-password';

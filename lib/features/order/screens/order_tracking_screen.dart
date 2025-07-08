@@ -1,7 +1,11 @@
 import 'dart:async';
 import 'dart:collection';
+import 'dart:convert';
+import 'dart:io';
 
 import 'package:geolocator/geolocator.dart';
+import 'package:pretty_http_logger/pretty_http_logger.dart';
+import 'package:sixam_mart/Model/live_track.dart';
 import 'package:sixam_mart/common/controllers/theme_controller.dart';
 import 'package:sixam_mart/common/widgets/custom_snackbar.dart';
 import 'package:sixam_mart/common/widgets/footer_view.dart';
@@ -19,6 +23,7 @@ import 'package:sixam_mart/helper/auth_helper.dart';
 import 'package:sixam_mart/helper/marker_helper.dart';
 import 'package:sixam_mart/helper/responsive_helper.dart';
 import 'package:sixam_mart/helper/route_helper.dart';
+import 'package:sixam_mart/util/app_constants.dart';
 import 'package:sixam_mart/util/dimensions.dart';
 import 'package:sixam_mart/util/images.dart';
 import 'package:sixam_mart/common/widgets/custom_app_bar.dart';
@@ -39,13 +44,14 @@ class OrderTrackingScreen extends StatefulWidget {
 }
 
 class OrderTrackingScreenState extends State<OrderTrackingScreen> {
+  Set<Polyline> _polylines = HashSet<Polyline>();
+  LiveTrack liveTrackLatLan = LiveTrack();
   GoogleMapController? _controller;
   bool _isLoading = true;
   Set<Marker> _markers = HashSet<Marker>();
   Timer? _timer;
   bool showChatPermission = true;
   bool isHovered = false;
-
   void _loadData() async {
     await Get.find<OrderController>().trackOrder(widget.orderID, null, true, contactNumber: widget.contactNumber);
     await Get.find<LocationController>().getCurrentLocation(true, notify: false, defaultLatLng: LatLng(
@@ -60,21 +66,33 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
       Get.find<OrderController>().timerTrackOrder(widget.orderID.toString(), contactNumber: widget.contactNumber);
     });
   }
+///......livetrack
+  Timer? _locationUpdateTimer;
+
+  void _startLocationUpdate() {
+    _locationUpdateTimer?.cancel();
+    _locationUpdateTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      updateDeliveryBoyApi();
+    });
+  }
 
   @override
   void initState() {
     super.initState();
-
     _loadData();
     _startApiCall();
+    _startLocationUpdate();
   }
+
 
   @override
   void dispose() {
-    super.dispose();
     _controller?.dispose();
     _timer?.cancel();
+    _locationUpdateTimer?.cancel();
+    super.dispose();
   }
+
 
   void onEntered(bool isHovered) {
     setState(() {
@@ -84,6 +102,7 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       appBar: CustomAppBar(title: 'order_tracking'.tr),
       endDrawer: const MenuDrawer(),endDrawerEnableOpenDragGesture: false,
@@ -114,6 +133,7 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
                 onEnter: (event) => onEntered(true),
                 onExit: (event) => onEntered(false),
                 child: GoogleMap(
+                  polylines: _polylines,
                   initialCameraPosition: CameraPosition(target: LatLng(
                     double.parse(track.deliveryAddress!.latitude!), double.parse(track.deliveryAddress!.longitude!),
                   ), zoom: 16),
@@ -124,6 +144,7 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
                     _controller = controller;
                     _isLoading = false;
                     setMarker(
+
                       track!.orderType == 'parcel' ? Store(latitude: track.receiverDetails!.latitude, longitude: track.receiverDetails!.longitude,
                           address: track.receiverDetails!.address, name: track.receiverDetails!.contactPersonName) : track.store, track.deliveryMan,
                       track.orderType == 'take_away' ? Get.find<LocationController>().position.latitude == 0 ? track.deliveryAddress : AddressModel(
@@ -187,32 +208,40 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
     );
   }
 
-  void setMarker(Store? store, DeliveryMan? deliveryMan, AddressModel? addressModel, bool takeAway, bool parcel, bool isRestaurant, {AddressModel? currentAddress, bool fromCurrentLocation = false}) async {
+  void setMarker(
+      Store? store,
+      DeliveryMan? deliveryMan,
+      AddressModel? addressModel,
+      bool takeAway,
+      bool parcel,
+      bool isRestaurant, {
+        AddressModel? currentAddress,
+        bool fromCurrentLocation = false,
+      }) async {
     try {
-
       BitmapDescriptor restaurantImageData = await MarkerHelper.convertAssetToBitmapDescriptor(
-        width: (isRestaurant || parcel) ? 30 : isRestaurant ? 30 : 50,
+        width: (isRestaurant || parcel) ? 30 : 50,
         imagePath: parcel ? Images.userMarker : isRestaurant ? Images.restaurantMarker : Images.markerStore,
       );
 
       BitmapDescriptor deliveryBoyImageData = await MarkerHelper.convertAssetToBitmapDescriptor(
         width: 30, imagePath: Images.deliveryManMarker,
       );
+
       BitmapDescriptor destinationImageData = await MarkerHelper.convertAssetToBitmapDescriptor(
         width: 30, imagePath: takeAway ? Images.myLocationMarker : Images.userMarker,
       );
 
-      /// Animate to coordinate
       LatLngBounds? bounds;
       double rotation = 0;
-      if(_controller != null) {
-        if (double.parse(addressModel!.latitude!) < double.parse(store!.latitude!)) {
+      if (_controller != null && addressModel != null && store != null) {
+        if (double.parse(addressModel.latitude!) < double.parse(store.latitude!)) {
           bounds = LatLngBounds(
             southwest: LatLng(double.parse(addressModel.latitude!), double.parse(addressModel.longitude!)),
             northeast: LatLng(double.parse(store.latitude!), double.parse(store.longitude!)),
           );
           rotation = 0;
-        }else {
+        } else {
           bounds = LatLngBounds(
             southwest: LatLng(double.parse(store.latitude!), double.parse(store.longitude!)),
             northeast: LatLng(double.parse(addressModel.latitude!), double.parse(addressModel.longitude!)),
@@ -220,31 +249,35 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
           rotation = 180;
         }
       }
+
       LatLng centerBounds = LatLng(
-        (bounds!.northeast.latitude + bounds.southwest.latitude)/2,
-        (bounds.northeast.longitude + bounds.southwest.longitude)/2,
+        (bounds!.northeast.latitude + bounds.southwest.latitude) / 2,
+        (bounds.northeast.longitude + bounds.southwest.longitude) / 2,
       );
 
-      if(fromCurrentLocation && currentAddress != null) {
+      if (fromCurrentLocation && currentAddress != null) {
         LatLng currentLocation = LatLng(
           double.parse(currentAddress.latitude!),
           double.parse(currentAddress.longitude!),
         );
-        _controller!.moveCamera(CameraUpdate.newCameraPosition(CameraPosition(target: currentLocation, zoom: GetPlatform.isWeb ? 7 : 15)));
+        _controller!.moveCamera(CameraUpdate.newCameraPosition(
+          CameraPosition(target: currentLocation, zoom: GetPlatform.isWeb ? 7 : 15),
+        ));
       }
 
-      if(!fromCurrentLocation) {
-        _controller!.moveCamera(CameraUpdate.newCameraPosition(CameraPosition(target: centerBounds, zoom: GetPlatform.isWeb ? 10 : 17)));
-        if(!ResponsiveHelper.isWeb()) {
+      if (!fromCurrentLocation) {
+        _controller!.moveCamera(CameraUpdate.newCameraPosition(
+          CameraPosition(target: centerBounds, zoom: GetPlatform.isWeb ? 10 : 17),
+        ));
+        if (!ResponsiveHelper.isWeb()) {
           zoomToFit(_controller, bounds, centerBounds, padding: GetPlatform.isWeb ? 15 : 3);
         }
       }
 
-      /// user for normal order , but sender for parcel order
+      // Clear previous markers
       _markers = HashSet<Marker>();
 
-      ///current location marker set
-      if(currentAddress != null) {
+      if (currentAddress != null) {
         _markers.add(Marker(
           markerId: const MarkerId('current_location'),
           visible: true,
@@ -258,11 +291,10 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
           ),
           icon: destinationImageData,
         ));
-        setState(() {});
       }
 
-      if(currentAddress == null){
-        addressModel != null ? _markers.add(Marker(
+      if (currentAddress == null && addressModel != null) {
+        _markers.add(Marker(
           markerId: const MarkerId('destination'),
           position: LatLng(double.parse(addressModel.latitude!), double.parse(addressModel.longitude!)),
           infoWindow: InfoWindow(
@@ -270,34 +302,94 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
             snippet: addressModel.address,
           ),
           icon: destinationImageData,
-        )) : const SizedBox();
+        ));
       }
 
-      ///store for normal order , but receiver for parcel order
-      store != null ? _markers.add(Marker(
-        markerId: const MarkerId('store'),
-        position: LatLng(double.parse(store.latitude!), double.parse(store.longitude!)),
-        infoWindow: InfoWindow(
-          title: parcel ? 'receiver'.tr : Get.find<SplashController>().configModel!.moduleConfig!.module!.showRestaurantText! ? 'store'.tr : 'store'.tr,
-          snippet: store.address,
-        ),
-        icon: restaurantImageData,
-      )) : const SizedBox();
+      if (store != null) {
+        _markers.add(Marker(
+          markerId: const MarkerId('store'),
+          position: LatLng(double.parse(store.latitude!), double.parse(store.longitude!)),
+          infoWindow: InfoWindow(
+            title: parcel
+                ? 'receiver'.tr
+                : Get.find<SplashController>().configModel!.moduleConfig!.module!.showRestaurantText!
+                ? 'store'.tr
+                : 'store'.tr,
+            snippet: store.address,
+          ),
+          icon: restaurantImageData,
+        ));
+      }
 
-      deliveryMan != null ? _markers.add(Marker(
-        markerId: const MarkerId('delivery_boy'),
-        position: LatLng(double.parse(deliveryMan.lat ?? '0'), double.parse(deliveryMan.lng ?? '0')),
-        infoWindow: InfoWindow(
-          title: 'delivery_man'.tr,
-          snippet: deliveryMan.location,
-        ),
-        rotation: rotation,
-        icon: deliveryBoyImageData,
-      )) : const SizedBox();
+      if (deliveryMan != null) {
+        _markers.add(Marker(
+          markerId: const MarkerId('delivery_boy'),
+          position: LatLng(double.parse(deliveryMan.lat ?? '0'), double.parse(deliveryMan.lng ?? '0')),
+          infoWindow: InfoWindow(
+            title: 'delivery_man'.tr,
+            snippet: deliveryMan.location,
+          ),
+          rotation: rotation,
+          icon: deliveryBoyImageData,
+        ));
+      }
 
-    }catch(_) {}
+      // 🔵 Draw polyline between delivery man and destination/receiver
+      _polylines.clear();
+
+// 1. Draw deliveryMan → destination
+      if (deliveryMan != null && addressModel != null) {
+        LatLng deliveryManLatLng = LatLng(
+          double.parse(deliveryMan.lat ?? '0'),
+          double.parse(deliveryMan.lng ?? '0'),
+        );
+        LatLng destinationLatLng = LatLng(
+          double.parse(addressModel.latitude!),
+          double.parse(addressModel.longitude!),
+        );
+
+        _polylines.add(
+          Polyline(
+            polylineId: const PolylineId('delivery_route'),
+            points: [deliveryManLatLng, destinationLatLng],
+            width: 4,
+            color: Colors.blue,
+            startCap: Cap.roundCap,
+            endCap: Cap.roundCap,
+            jointType: JointType.round,
+          ),
+        );
+      }
+// 2. Fallback: draw store → destination if no deliveryMan yet
+      else if (store != null && addressModel != null) {
+        LatLng storeLatLng = LatLng(
+          double.parse(store.latitude!),
+          double.parse(store.longitude!),
+        );
+        LatLng destinationLatLng = LatLng(
+          double.parse(addressModel.latitude!),
+          double.parse(addressModel.longitude!),
+        );
+
+        _polylines.add(
+          Polyline(
+            polylineId: const PolylineId('store_to_destination'),
+            points: [storeLatLng, destinationLatLng],
+            width: 4,
+            color: Colors.green,
+            startCap: Cap.roundCap,
+            endCap: Cap.roundCap,
+            jointType: JointType.round,
+          ),
+        );
+      }
+
+
+    } catch (_) {}
+
     setState(() {});
   }
+
 
   Future<void> zoomToFit(GoogleMapController? controller, LatLngBounds? bounds, LatLng centerBounds, {double padding = 0.5}) async {
     bool keepZoomingOut = true;
@@ -347,5 +439,128 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
       onTap();
     }
   }
+  Future<void> updateDeliveryBoyApi() async {
+    HttpWithMiddleware http = HttpWithMiddleware.build(middlewares: [
+      HttpLogger(logLevel: LogLevel.BODY),
+    ]);
+
+    try {
+      var response = await http.get(
+        Uri.parse("${AppConstants.baseUrl}${AppConstants.getLocationDeliveryBoy}${widget.orderID}"),
+        headers: {
+          'content-type': 'application/json',
+          'accept': 'application/json',
+        },
+      );
+
+      Map<String, dynamic> jsonResponse = jsonDecode(response.body);
+      if (jsonResponse['status'] == true) {
+        liveTrackLatLan = LiveTrack.fromJson(jsonResponse);
+
+        // Delivery boy coordinates
+        double lat = double.tryParse(liveTrackLatLan.location?.latitude?.toString() ?? '') ?? 0;
+        double lng = double.tryParse(liveTrackLatLan.location?.longitude?.toString() ?? '') ?? 0;
+
+        BitmapDescriptor deliveryBoyImageData = await MarkerHelper.convertAssetToBitmapDescriptor(
+          width: 30,
+          imagePath: Images.deliveryManMarker,
+        );
+
+        Marker updatedDeliveryMarker = Marker(
+          markerId: const MarkerId('delivery_boy'),
+          position: LatLng(lat, lng),
+          infoWindow: InfoWindow(
+            title: 'delivery_man'.tr,
+            snippet: liveTrackLatLan.location?.toString() ?? '',
+          ),
+          icon: deliveryBoyImageData,
+          rotation: 0,
+        );
+
+        // Remove old marker
+        _markers.removeWhere((marker) => marker.markerId.value == 'delivery_boy');
+        _markers.add(updatedDeliveryMarker);
+
+        // Draw polyline using road route from Google
+        if (_markers.any((m) => m.markerId.value == 'destination')) {
+          Marker destinationMarker = _markers.firstWhere((m) => m.markerId.value == 'destination');
+
+          List<LatLng> route = await getRouteCoordinates(
+            LatLng(lat, lng),
+            destinationMarker.position,
+          );
+
+          _polylines = {
+            Polyline(
+              polylineId: const PolylineId('delivery_route'),
+              points: route,
+              width: 4,
+              color: Colors.blue,
+              startCap: Cap.roundCap,
+              endCap: Cap.roundCap,
+              jointType: JointType.round,
+            )
+          };
+        }
+
+        setState(() {});
+      } else {
+        debugPrint("Failed to update location: ${jsonResponse['message']}");
+      }
+    } catch (error) {
+      debugPrint("Error in updateLocationApi: $error");
+    }
+  }
+
+  Future<List<LatLng>> getRouteCoordinates(LatLng origin, LatLng destination) async {
+    const apiKey = 'AIzaSyCaCSJ0BZItSyXqBv8vpD1N4WBffJeKhLQ'; // Replace this!
+    // const apiKey = 'AIzaSyD7fSNx2zaxcHmraMpgojfk18m3y-Spk7Y'; // Replace this!
+    final url = Uri.parse(
+        "https://maps.googleapis.com/maps/api/directions/json?origin=${origin.latitude},${origin.longitude}&destination=${destination.latitude},${destination.longitude}&mode=driving&key=$apiKey");
+
+    final response = await HttpClient().getUrl(url).then((req) => req.close());
+    final responseBody = await response.transform(utf8.decoder).join();
+    final jsonData = jsonDecode(responseBody);
+
+    if (jsonData['status'] == 'OK') {
+      final points = jsonData['routes'][0]['overview_polyline']['points'];
+      return decodePolyline(points);
+    } else {
+      print("Route fetch failed: ${jsonData['status']}");
+      return [];
+    }
+  }
+
 
 }
+List<LatLng> decodePolyline(String encoded) {
+  List<LatLng> poly = [];
+  int index = 0, len = encoded.length;
+  int lat = 0, lng = 0;
+
+  while (index < len) {
+    int b, shift = 0, result = 0;
+    do {
+      b = encoded.codeUnitAt(index++) - 63;
+      result |= (b & 0x1F) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+    int dlat = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+    lat += dlat;
+
+    shift = 0;
+    result = 0;
+    do {
+      b = encoded.codeUnitAt(index++) - 63;
+      result |= (b & 0x1F) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+    int dlng = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+    lng += dlng;
+
+    poly.add(LatLng(lat / 1E5, lng / 1E5));
+  }
+
+  return poly;
+}
+

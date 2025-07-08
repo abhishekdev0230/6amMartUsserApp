@@ -174,11 +174,11 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                                         borderRadius: BorderRadius.circular(Dimensions.radiusSmall),
                                         child: Stack(clipBehavior: Clip.none, children: [
                                           GoogleMap(
+
                                             initialCameraPosition: CameraPosition(target: _initialPosition, zoom: 16),
                                             minMaxZoomPreference: const MinMaxZoomPreference(0, 16),
                                             onTap: (latLng) {
                                               if(ResponsiveHelper.isDesktop(Get.context)) {
-
                                               }else {
                                                 Get.toNamed(
                                                   RouteHelper.getPickMapRoute('add-address', false),

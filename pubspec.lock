@@ -795,6 +795,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.23"
+  flutter_polyline_points:
+    dependency: "direct main"
+    description:
+      name: flutter_polyline_points
+      sha256: "3a1c8c30abee9fb0fbe44c70d5d1cedb10ef28ec7ea285c669f02b3e183483aa"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.1.0"
   flutter_secure_storage:
     dependency: transitive
     description:
@@ -1081,10 +1089,10 @@ packages:
     dependency: "direct main"
     description:
       name: http
-      sha256: b9c29a161230ee03d3ccf545097fccd9b87a5264228c5d348202e0f0c28f9010
+      sha256: "2c11f3f94c687ee9bad77c171151672986360b2b001d109814ee7140b2cf261b"
       url: "https://pub.dev"
     source: hosted
-    version: "1.2.2"
+    version: "1.4.0"
   http_multi_server:
     dependency: transitive
     description:
@@ -1541,6 +1549,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.5.1"
+  pretty_http_logger:
+    dependency: "direct main"
+    description:
+      name: pretty_http_logger
+      sha256: "6577b57c23406268320a128bd73cc391bf5b41dfe237dc9c6fc1390d886e8162"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.5"
   provider:
     dependency: transitive
     description:
