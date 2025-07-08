@@ -439,6 +439,7 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
       onTap();
     }
   }
+  ///..............live track...................
   Future<void> updateDeliveryBoyApi() async {
     HttpWithMiddleware http = HttpWithMiddleware.build(middlewares: [
       HttpLogger(logLevel: LogLevel.BODY),
@@ -514,7 +515,6 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
 
   Future<List<LatLng>> getRouteCoordinates(LatLng origin, LatLng destination) async {
     const apiKey = 'AIzaSyCaCSJ0BZItSyXqBv8vpD1N4WBffJeKhLQ'; // Replace this!
-    // const apiKey = 'AIzaSyD7fSNx2zaxcHmraMpgojfk18m3y-Spk7Y'; // Replace this!
     final url = Uri.parse(
         "https://maps.googleapis.com/maps/api/directions/json?origin=${origin.latitude},${origin.longitude}&destination=${destination.latitude},${destination.longitude}&mode=driving&key=$apiKey");
 
