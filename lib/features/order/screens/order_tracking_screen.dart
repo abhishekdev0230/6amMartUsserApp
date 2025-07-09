@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:geolocator/geolocator.dart';
 import 'package:pretty_http_logger/pretty_http_logger.dart';
@@ -225,11 +226,11 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
       );
 
       BitmapDescriptor deliveryBoyImageData = await MarkerHelper.convertAssetToBitmapDescriptor(
-        width: 30, imagePath: Images.deliveryManMarker,
+        width: 30, imagePath: Images.deliveryIcon,
       );
 
       BitmapDescriptor destinationImageData = await MarkerHelper.convertAssetToBitmapDescriptor(
-        width: 30, imagePath: takeAway ? Images.myLocationMarker : Images.userMarker,
+        width: 30, imagePath: takeAway ? Images.myLocationMarker : Images.homeIcon,
       );
 
       LatLngBounds? bounds;
@@ -337,7 +338,6 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
       // 🔵 Draw polyline between delivery man and destination/receiver
       _polylines.clear();
 
-// 1. Draw deliveryMan → destination
       if (deliveryMan != null && addressModel != null) {
         LatLng deliveryManLatLng = LatLng(
           double.parse(deliveryMan.lat ?? '0'),
@@ -440,6 +440,8 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
     }
   }
   ///..............live track...................
+  LatLng? _previousDeliveryPosition;
+
   Future<void> updateDeliveryBoyApi() async {
     HttpWithMiddleware http = HttpWithMiddleware.build(middlewares: [
       HttpLogger(logLevel: LogLevel.BODY),
@@ -461,33 +463,43 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
         // Delivery boy coordinates
         double lat = double.tryParse(liveTrackLatLan.location?.latitude?.toString() ?? '') ?? 0;
         double lng = double.tryParse(liveTrackLatLan.location?.longitude?.toString() ?? '') ?? 0;
+        LatLng currentLatLng = LatLng(lat, lng);
+
+        // Calculate rotation based on previous location
+        double rotation = 0;
+        if (_previousDeliveryPosition != null) {
+          rotation = _calculateBearing(_previousDeliveryPosition!, currentLatLng);
+        }
+        _previousDeliveryPosition = currentLatLng;
 
         BitmapDescriptor deliveryBoyImageData = await MarkerHelper.convertAssetToBitmapDescriptor(
           width: 30,
-          imagePath: Images.deliveryManMarker,
+          imagePath: Images.deliveryIcon,
         );
 
         Marker updatedDeliveryMarker = Marker(
           markerId: const MarkerId('delivery_boy'),
-          position: LatLng(lat, lng),
+          position: currentLatLng,
           infoWindow: InfoWindow(
             title: 'delivery_man'.tr,
-            snippet: liveTrackLatLan.location?.toString() ?? '',
+            snippet: 'Lat: ${lat.toStringAsFixed(5)}, Lng: ${lng.toStringAsFixed(5)}',
           ),
           icon: deliveryBoyImageData,
-          rotation: 0,
+          rotation: rotation, // ✅ Rotate to face direction
+          anchor: const Offset(0.5, 0.5),
+          flat: true,
         );
 
         // Remove old marker
         _markers.removeWhere((marker) => marker.markerId.value == 'delivery_boy');
         _markers.add(updatedDeliveryMarker);
 
-        // Draw polyline using road route from Google
+        // Draw updated polyline
         if (_markers.any((m) => m.markerId.value == 'destination')) {
           Marker destinationMarker = _markers.firstWhere((m) => m.markerId.value == 'destination');
 
           List<LatLng> route = await getRouteCoordinates(
-            LatLng(lat, lng),
+            currentLatLng,
             destinationMarker.position,
           );
 
@@ -496,7 +508,7 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
               polylineId: const PolylineId('delivery_route'),
               points: route,
               width: 4,
-              color: Colors.blue,
+              color: Colors.green,
               startCap: Cap.roundCap,
               endCap: Cap.roundCap,
               jointType: JointType.round,
@@ -512,9 +524,21 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
       debugPrint("Error in updateLocationApi: $error");
     }
   }
+  double _calculateBearing(LatLng start, LatLng end) {
+    double lat1 = start.latitude * (3.141592653589793 / 180);
+    double lat2 = end.latitude * (3.141592653589793 / 180);
+    double deltaLng = (end.longitude - start.longitude) * (3.141592653589793 / 180);
+
+    double y = sin(deltaLng) * cos(lat2);
+    double x = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(deltaLng);
+    double bearing = atan2(y, x) * (180 / 3.141592653589793);
+    return (bearing + 360) % 360;
+  }
+
 
   Future<List<LatLng>> getRouteCoordinates(LatLng origin, LatLng destination) async {
-    const apiKey = 'AIzaSyCaCSJ0BZItSyXqBv8vpD1N4WBffJeKhLQ'; // Replace this!
+    // const apiKey = 'AIzaSyCaCSJ0BZItSyXqBv8vpD1N4WBffJeKhLQ'; // Replace this!
+    const apiKey = 'AIzaSyD7fSNx2zaxcHmraMpgojfk18m3y-Spk7Y'; // Replace this!
     final url = Uri.parse(
         "https://maps.googleapis.com/maps/api/directions/json?origin=${origin.latitude},${origin.longitude}&destination=${destination.latitude},${destination.longitude}&mode=driving&key=$apiKey");
 
