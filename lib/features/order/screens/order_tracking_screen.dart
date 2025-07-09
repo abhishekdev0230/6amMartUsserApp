@@ -487,6 +487,7 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
           icon: deliveryBoyImageData,
           rotation: rotation, // ✅ Rotate to face direction
           anchor: const Offset(0.5, 0.5),
+
           flat: true,
         );
 
@@ -525,15 +526,16 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
     }
   }
   double _calculateBearing(LatLng start, LatLng end) {
-    double lat1 = start.latitude * (3.141592653589793 / 180);
-    double lat2 = end.latitude * (3.141592653589793 / 180);
-    double deltaLng = (end.longitude - start.longitude) * (3.141592653589793 / 180);
+    double lat1 = start.latitude * (pi / 180);
+    double lat2 = end.latitude * (pi / 180);
+    double deltaLng = (end.longitude - start.longitude) * (pi / 180);
 
     double y = sin(deltaLng) * cos(lat2);
     double x = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(deltaLng);
-    double bearing = atan2(y, x) * (180 / 3.141592653589793);
-    return (bearing + 360) % 360;
+    double bearing = atan2(y, x) * (180 / pi);
+    return (bearing + 360) % 360; // Normalize to 0-360°
   }
+
 
 
   Future<List<LatLng>> getRouteCoordinates(LatLng origin, LatLng destination) async {
