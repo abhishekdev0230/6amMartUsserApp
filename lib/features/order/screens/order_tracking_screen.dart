@@ -10,6 +10,7 @@ import 'package:sixam_mart/Model/live_track.dart';
 import 'package:sixam_mart/common/controllers/theme_controller.dart';
 import 'package:sixam_mart/common/widgets/custom_snackbar.dart';
 import 'package:sixam_mart/common/widgets/footer_view.dart';
+import 'package:sixam_mart/common/widgets/map_decode_polyline.dart';
 import 'package:sixam_mart/features/location/controllers/location_controller.dart';
 import 'package:sixam_mart/features/location/widgets/permission_dialog_widget.dart';
 import 'package:sixam_mart/features/splash/controllers/splash_controller.dart';
@@ -45,7 +46,7 @@ class OrderTrackingScreen extends StatefulWidget {
 }
 
 class OrderTrackingScreenState extends State<OrderTrackingScreen> {
-  Set<Polyline> _polylines = HashSet<Polyline>();
+  Set<Polyline> polyLines = HashSet<Polyline>();
   LiveTrack liveTrackLatLan = LiveTrack();
   GoogleMapController? _controller;
   bool _isLoading = true;
@@ -67,7 +68,7 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
       Get.find<OrderController>().timerTrackOrder(widget.orderID.toString(), contactNumber: widget.contactNumber);
     });
   }
-///......livetrack
+///.................live Track..............
   Timer? _locationUpdateTimer;
 
   void _startLocationUpdate() {
@@ -100,6 +101,33 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
       this.isHovered = isHovered;
     });
   }
+  Future<String> _estimateArrivalTime(LatLng origin, LatLng destination) async {
+    // const apiKey = 'YOUR_GOOGLE_API_KEY'; // 🔐 Replace with your secure key
+    final url = Uri.parse(
+      'https://maps.googleapis.com/maps/api/distancematrix/json'
+          '?origins=${origin.latitude},${origin.longitude}'
+          '&destinations=${destination.latitude},${destination.longitude}'
+          '&mode=driving&key=${AppConstants.googleMapKey}',
+    );
+
+    try {
+      final response = await HttpClient().getUrl(url).then((req) => req.close());
+      final body = await response.transform(utf8.decoder).join();
+      final data = jsonDecode(body);
+
+      if (data['status'] == 'OK') {
+        final duration = data['rows'][0]['elements'][0]['duration']['text']; // e.g., "8 mins"
+        return duration;
+      } else {
+        debugPrint('Distance Matrix Error: ${data['status']}');
+        return "N/A";
+      }
+    } catch (e) {
+      debugPrint('ETA Error: $e');
+      return "N/A";
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -134,7 +162,7 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
                 onEnter: (event) => onEntered(true),
                 onExit: (event) => onEntered(false),
                 child: GoogleMap(
-                  polylines: _polylines,
+                  polylines: polyLines,
                   initialCameraPosition: CameraPosition(target: LatLng(
                     double.parse(track.deliveryAddress!.latitude!), double.parse(track.deliveryAddress!.longitude!),
                   ), zoom: 16),
@@ -162,9 +190,50 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
               _isLoading ? const Center(child: CircularProgressIndicator()) : const SizedBox(),
 
               Positioned(
-                top: Dimensions.paddingSizeSmall, left: Dimensions.paddingSizeSmall, right: Dimensions.paddingSizeSmall,
-                child: TrackingStepperWidget(status: track.orderStatus, takeAway: track.orderType == 'take_away'),
+                top: Dimensions.paddingSizeSmall,
+                left: Dimensions.paddingSizeSmall,
+                right: Dimensions.paddingSizeSmall,
+                child: track.orderStatus?.toLowerCase() == 'confirmed'
+                    ? FutureBuilder<String>(
+                  future: _estimateArrivalTime(
+                    LatLng(
+                      double.tryParse(liveTrackLatLan.location?.latitude?.toString() ?? '0') ?? 0,
+                      double.tryParse(liveTrackLatLan.location?.longitude?.toString() ?? '0') ?? 0,
+
+                    ),
+                    LatLng(
+                      double.tryParse(track.deliveryAddress?.latitude ?? '0') ?? 0,
+                      double.tryParse(track.deliveryAddress?.longitude ?? '0') ?? 0,
+                    ),
+                  ),
+                  builder: (context, snapshot) {
+                    final eta = snapshot.data ?? '...';
+                    return Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.directions_bike, color: Colors.blue),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Arriving in $eta',
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                )
+                    : TrackingStepperWidget(
+                  status: track.orderStatus,
+                  takeAway: track.orderType == 'take_away',
+                ),
               ),
+
+
 
               Positioned(
                 right: 15, bottom: track.orderType != 'take_away' && track.deliveryMan == null ? 150 : 220,
@@ -275,7 +344,6 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
         }
       }
 
-      // Clear previous markers
       _markers = HashSet<Marker>();
 
       if (currentAddress != null) {
@@ -335,8 +403,7 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
         ));
       }
 
-      // 🔵 Draw polyline between delivery man and destination/receiver
-      _polylines.clear();
+      polyLines.clear();
 
       if (deliveryMan != null && addressModel != null) {
         LatLng deliveryManLatLng = LatLng(
@@ -348,7 +415,7 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
           double.parse(addressModel.longitude!),
         );
 
-        _polylines.add(
+        polyLines.add(
           Polyline(
             polylineId: const PolylineId('delivery_route'),
             points: [deliveryManLatLng, destinationLatLng],
@@ -360,7 +427,6 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
           ),
         );
       }
-// 2. Fallback: draw store → destination if no deliveryMan yet
       else if (store != null && addressModel != null) {
         LatLng storeLatLng = LatLng(
           double.parse(store.latitude!),
@@ -371,7 +437,7 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
           double.parse(addressModel.longitude!),
         );
 
-        _polylines.add(
+        polyLines.add(
           Polyline(
             polylineId: const PolylineId('store_to_destination'),
             points: [storeLatLng, destinationLatLng],
@@ -406,7 +472,6 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
         break;
       }
       else {
-        // Zooming out by 0.1 zoom level per iteration
         final double zoomLevel = await controller.getZoomLevel() - 0.1;
         controller.moveCamera(CameraUpdate.newCameraPosition(CameraPosition(
           target: centerBounds,
@@ -460,12 +525,10 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
       if (jsonResponse['status'] == true) {
         liveTrackLatLan = LiveTrack.fromJson(jsonResponse);
 
-        // Delivery boy coordinates
         double lat = double.tryParse(liveTrackLatLan.location?.latitude?.toString() ?? '') ?? 0;
         double lng = double.tryParse(liveTrackLatLan.location?.longitude?.toString() ?? '') ?? 0;
         LatLng currentLatLng = LatLng(lat, lng);
 
-        // Calculate rotation based on previous location
         double rotation = 0;
         if (_previousDeliveryPosition != null) {
           rotation = _calculateBearing(_previousDeliveryPosition!, currentLatLng);
@@ -485,17 +548,16 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
             snippet: 'Lat: ${lat.toStringAsFixed(5)}, Lng: ${lng.toStringAsFixed(5)}',
           ),
           icon: deliveryBoyImageData,
-          rotation: rotation, // ✅ Rotate to face direction
+          rotation: rotation,
           anchor: const Offset(0.5, 0.5),
-
           flat: true,
         );
 
-        // Remove old marker
+
         _markers.removeWhere((marker) => marker.markerId.value == 'delivery_boy');
         _markers.add(updatedDeliveryMarker);
 
-        // Draw updated polyline
+
         if (_markers.any((m) => m.markerId.value == 'destination')) {
           Marker destinationMarker = _markers.firstWhere((m) => m.markerId.value == 'destination');
 
@@ -504,19 +566,18 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
             destinationMarker.position,
           );
 
-          _polylines = {
+          polyLines = {
             Polyline(
               polylineId: const PolylineId('delivery_route'),
               points: route,
               width: 4,
-              color: Colors.green,
+              color: Colors.blue,
               startCap: Cap.roundCap,
               endCap: Cap.roundCap,
               jointType: JointType.round,
             )
           };
         }
-
         setState(() {});
       } else {
         debugPrint("Failed to update location: ${jsonResponse['message']}");
@@ -533,16 +594,16 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
     double y = sin(deltaLng) * cos(lat2);
     double x = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(deltaLng);
     double bearing = atan2(y, x) * (180 / pi);
-    return (bearing + 360) % 360; // Normalize to 0-360°
+    return (bearing + 360) % 360;
   }
 
 
 
   Future<List<LatLng>> getRouteCoordinates(LatLng origin, LatLng destination) async {
     // const apiKey = 'AIzaSyCaCSJ0BZItSyXqBv8vpD1N4WBffJeKhLQ'; // Replace this!
-    const apiKey = 'AIzaSyD7fSNx2zaxcHmraMpgojfk18m3y-Spk7Y'; // Replace this!
+    // const apiKey = 'AIzaSyD7fSNx2zaxcHmraMpgojfk18m3y-Spk7Y'; // Replace this!
     final url = Uri.parse(
-        "https://maps.googleapis.com/maps/api/directions/json?origin=${origin.latitude},${origin.longitude}&destination=${destination.latitude},${destination.longitude}&mode=driving&key=$apiKey");
+        "https://maps.googleapis.com/maps/api/directions/json?origin=${origin.latitude},${origin.longitude}&destination=${destination.latitude},${destination.longitude}&mode=driving&key=${AppConstants.googleMapKey}");
 
     final response = await HttpClient().getUrl(url).then((req) => req.close());
     final responseBody = await response.transform(utf8.decoder).join();
@@ -559,34 +620,5 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
 
 
 }
-List<LatLng> decodePolyline(String encoded) {
-  List<LatLng> poly = [];
-  int index = 0, len = encoded.length;
-  int lat = 0, lng = 0;
 
-  while (index < len) {
-    int b, shift = 0, result = 0;
-    do {
-      b = encoded.codeUnitAt(index++) - 63;
-      result |= (b & 0x1F) << shift;
-      shift += 5;
-    } while (b >= 0x20);
-    int dlat = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
-    lat += dlat;
-
-    shift = 0;
-    result = 0;
-    do {
-      b = encoded.codeUnitAt(index++) - 63;
-      result |= (b & 0x1F) << shift;
-      shift += 5;
-    } while (b >= 0x20);
-    int dlng = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
-    lng += dlng;
-
-    poly.add(LatLng(lat / 1E5, lng / 1E5));
-  }
-
-  return poly;
-}
 

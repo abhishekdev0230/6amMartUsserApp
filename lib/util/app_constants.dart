@@ -12,8 +12,15 @@ class AppConstants {
   // static const String webHostedUrl = 'https://6ammart-web.6amtech.com';
   static const String webHostedUrl = 'https://6Kart.in';
   static const bool useReactWebsite = false;
+  ///........mab key.................
+  static const String googleMapKey = 'AIzaSyCaCSJ0BZItSyXqBv8vpD1N4WBffJeKhLQ';
+  ///.........work......poly....
+  // static const String googleMapKey = 'AIzaSyD7fSNx2zaxcHmraMpgojfk18m3y-Spk7Y';
+
+
 
   // static const String baseUrl = 'https://6ammart-admin.6amtech.com';
+
   static const String baseUrl = 'https://6Kart.in';
   static const String categoryUri = '/api/v1/categories';
   static const String bannerUri = '/api/v1/banners';
