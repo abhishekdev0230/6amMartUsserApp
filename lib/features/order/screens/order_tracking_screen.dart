@@ -248,7 +248,7 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
                               left: Dimensions.paddingSizeSmall,
                               right: Dimensions.paddingSizeSmall,
                               child: track.orderStatus?.toLowerCase() ==
-                                      'confirmed'
+                                      'accepted'
                                   ? FutureBuilder<String>(
                                       future: _estimateArrivalTime(
                                         LatLng(
@@ -265,7 +265,8 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
                                         ),
                                         LatLng(
                                           double.tryParse(track.deliveryAddress
-                                                      ?.latitude ?? '0') ??
+                                                      ?.latitude ??
+                                                  '0') ??
                                               0,
                                           double.tryParse(track.deliveryAddress
                                                       ?.longitude ??
