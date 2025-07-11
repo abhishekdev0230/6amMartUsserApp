@@ -143,6 +143,7 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
       endDrawer: const MenuDrawer(),
       endDrawerEnableOpenDragGesture: false,
       body: GetBuilder<OrderController>(builder: (orderController) {
+        print("track.orderStatus${orderController.trackModel?.orderStatus}");
         OrderModel? track;
         if (orderController.trackModel != null) {
           track = orderController.trackModel;
@@ -247,8 +248,7 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
                               top: Dimensions.paddingSizeSmall,
                               left: Dimensions.paddingSizeSmall,
                               right: Dimensions.paddingSizeSmall,
-                              child: track.orderStatus?.toLowerCase() ==
-                                      'accepted'
+                              child:( track.orderStatus?.toLowerCase() == 'accepted' || track.orderStatus?.toLowerCase() == 'confirmed'  )
                                   ? FutureBuilder<String>(
                                       future: _estimateArrivalTime(
                                         LatLng(
