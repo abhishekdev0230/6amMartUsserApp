@@ -214,6 +214,7 @@ class Images {
   static const String fireIcon = 'assets/image/fire.png';
   static const String orderPlaceHolder = 'assets/image/order_place_holder.png';
   static const String emailWithPhoneIcon = 'assets/image/email_with_phone.png';
+  static const String homeMap = 'assets/image/home_map.png';
 
   ///Svg images
   static const String referBg = 'assets/image/refer_bg.svg';
@@ -239,6 +240,7 @@ class Images {
   static const String landingSellerBg = 'assets/image/landing_seller_bg.svg';
   static const String landingStoreOpen = 'assets/image/landing_store_open.svg';
   static const String landingChooseLocation = 'assets/image/landing_choose_location.svg';
+  static const String mapDeliveryManIcon = 'assets/image/mapDelaviryManIcon.png';
 
   ///Rental module
   static const String searchIconNewHome = 'assets/image/search.png';

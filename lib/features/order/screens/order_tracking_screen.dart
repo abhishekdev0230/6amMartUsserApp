@@ -39,7 +39,8 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 class OrderTrackingScreen extends StatefulWidget {
   final String? orderID;
   final String? contactNumber;
-  const OrderTrackingScreen({super.key, required this.orderID, this.contactNumber});
+  const OrderTrackingScreen(
+      {super.key, required this.orderID, this.contactNumber});
 
   @override
   OrderTrackingScreenState createState() => OrderTrackingScreenState();
@@ -49,31 +50,38 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
   Set<Polyline> polyLines = HashSet<Polyline>();
   LiveTrack liveTrackLatLan = LiveTrack();
   GoogleMapController? _controller;
-  bool _isLoading = true;
+
+  bool  _isLoading = true;
   Set<Marker> _markers = HashSet<Marker>();
   Timer? _timer;
   bool showChatPermission = true;
   bool isHovered = false;
   void _loadData() async {
-    await Get.find<OrderController>().trackOrder(widget.orderID, null, true, contactNumber: widget.contactNumber);
-    await Get.find<LocationController>().getCurrentLocation(true, notify: false, defaultLatLng: LatLng(
-      double.parse(AddressHelper.getUserAddressFromSharedPref()!.latitude!),
-      double.parse(AddressHelper.getUserAddressFromSharedPref()!.longitude!),
-    ));
+    await Get.find<OrderController>().trackOrder(widget.orderID, null, true,
+        contactNumber: widget.contactNumber);
+    await Get.find<LocationController>().getCurrentLocation(true,
+        notify: false,
+        defaultLatLng: LatLng(
+          double.parse(AddressHelper.getUserAddressFromSharedPref()!.latitude!),
+          double.parse(
+              AddressHelper.getUserAddressFromSharedPref()!.longitude!),
+        ));
   }
 
-  void _startApiCall(){
+  void _startApiCall() {
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 10), (timer) {
-      Get.find<OrderController>().timerTrackOrder(widget.orderID.toString(), contactNumber: widget.contactNumber);
+      Get.find<OrderController>().timerTrackOrder(widget.orderID.toString(),
+          contactNumber: widget.contactNumber);
     });
   }
-///.................live Track..............
+
+  ///.................live Track..............
   Timer? _locationUpdateTimer;
 
   void _startLocationUpdate() {
     _locationUpdateTimer?.cancel();
-    _locationUpdateTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+    _locationUpdateTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
       updateDeliveryBoyApi();
     });
   }
@@ -86,7 +94,6 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
     _startLocationUpdate();
   }
 
-
   @override
   void dispose() {
     _controller?.dispose();
@@ -95,28 +102,29 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
     super.dispose();
   }
 
-
   void onEntered(bool isHovered) {
     setState(() {
       this.isHovered = isHovered;
     });
   }
+
   Future<String> _estimateArrivalTime(LatLng origin, LatLng destination) async {
-    // const apiKey = 'YOUR_GOOGLE_API_KEY'; // 🔐 Replace with your secure key
     final url = Uri.parse(
       'https://maps.googleapis.com/maps/api/distancematrix/json'
-          '?origins=${origin.latitude},${origin.longitude}'
-          '&destinations=${destination.latitude},${destination.longitude}'
-          '&mode=driving&key=${AppConstants.googleMapKey}',
+      '?origins=${origin.latitude},${origin.longitude}'
+      '&destinations=${destination.latitude},${destination.longitude}'
+      '&mode=driving&key=${AppConstants.googleMapKey}',
     );
 
     try {
-      final response = await HttpClient().getUrl(url).then((req) => req.close());
+      final response =
+          await HttpClient().getUrl(url).then((req) => req.close());
       final body = await response.transform(utf8.decoder).join();
       final data = jsonDecode(body);
 
       if (data['status'] == 'OK') {
-        final duration = data['rows'][0]['elements'][0]['duration']['text']; // e.g., "8 mins"
+        final duration = data['rows'][0]['elements'][0]['duration']
+            ['text']; // e.g., "8 mins"
         return duration;
       } else {
         debugPrint('Distance Matrix Error: ${data['status']}');
@@ -128,22 +136,22 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       appBar: CustomAppBar(title: 'order_tracking'.tr),
-      endDrawer: const MenuDrawer(),endDrawerEnableOpenDragGesture: false,
+      endDrawer: const MenuDrawer(),
+      endDrawerEnableOpenDragGesture: false,
       body: GetBuilder<OrderController>(builder: (orderController) {
         OrderModel? track;
-        if(orderController.trackModel != null) {
+        if (orderController.trackModel != null) {
           track = orderController.trackModel;
 
-          if(track!.orderType != 'parcel') {
+          if (track!.orderType != 'parcel') {
             if (track.store!.storeBusinessModel == 'commission') {
               showChatPermission = true;
-            } else if (track.store!.storeSubscription != null && track.store!.storeBusinessModel == 'subscription') {
+            } else if (track.store!.storeSubscription != null &&
+                track.store!.storeBusinessModel == 'subscription') {
               showChatPermission = track.store!.storeSubscription!.chat == 1;
             } else {
               showChatPermission = false;
@@ -153,168 +161,298 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
           }
         }
 
-        return track != null ? SingleChildScrollView(
-          physics: isHovered || !ResponsiveHelper.isDesktop(context) ? const NeverScrollableScrollPhysics() : const AlwaysScrollableScrollPhysics(),
-          child: FooterView(
-            child: Center(child: SizedBox(width: Dimensions.webMaxWidth, height: ResponsiveHelper.isDesktop(context) ? 700 : MediaQuery.of(context).size.height * 0.85, child: Stack(children: [
-
-              MouseRegion(
-                onEnter: (event) => onEntered(true),
-                onExit: (event) => onEntered(false),
-                child: GoogleMap(
-                  polylines: polyLines,
-                  initialCameraPosition: CameraPosition(target: LatLng(
-                    double.parse(track.deliveryAddress!.latitude!), double.parse(track.deliveryAddress!.longitude!),
-                  ), zoom: 16),
-                  minMaxZoomPreference: const MinMaxZoomPreference(0, 16),
-                  zoomControlsEnabled: false,
-                  markers: _markers,
-                  onMapCreated: (GoogleMapController controller) {
-                    _controller = controller;
-                    _isLoading = false;
-                    setMarker(
-
-                      track!.orderType == 'parcel' ? Store(latitude: track.receiverDetails!.latitude, longitude: track.receiverDetails!.longitude,
-                          address: track.receiverDetails!.address, name: track.receiverDetails!.contactPersonName) : track.store, track.deliveryMan,
-                      track.orderType == 'take_away' ? Get.find<LocationController>().position.latitude == 0 ? track.deliveryAddress : AddressModel(
-                        latitude: Get.find<LocationController>().position.latitude.toString(),
-                        longitude: Get.find<LocationController>().position.longitude.toString(),
-                        address: Get.find<LocationController>().address,
-                      ) : track.deliveryAddress, track.orderType == 'take_away', track.orderType == 'parcel', track.moduleType == 'food',
-                    );
-                  },
-                  style: Get.isDarkMode ? Get.find<ThemeController>().darkMap : Get.find<ThemeController>().lightMap,
+        return track != null
+            ? SingleChildScrollView(
+                physics: isHovered || !ResponsiveHelper.isDesktop(context)
+                    ? const NeverScrollableScrollPhysics()
+                    : const AlwaysScrollableScrollPhysics(),
+                child: FooterView(
+                  child: Center(
+                      child: SizedBox(
+                          width: Dimensions.webMaxWidth,
+                          height: ResponsiveHelper.isDesktop(context)
+                              ? 700
+                              : MediaQuery.of(context).size.height * 0.85,
+                          child: Stack(children: [
+                            MouseRegion(
+                              onEnter: (event) => onEntered(true),
+                              onExit: (event) => onEntered(false),
+                              child: GoogleMap(
+                                polylines: polyLines,
+                                initialCameraPosition: CameraPosition(
+                                    target: LatLng(
+                                      double.parse(
+                                          track.deliveryAddress!.latitude!),
+                                      double.parse(
+                                          track.deliveryAddress!.longitude!),
+                                    ),
+                                    zoom: 16),
+                                minMaxZoomPreference:
+                                    const MinMaxZoomPreference(0, 16),
+                                zoomControlsEnabled: false,
+                                markers: _markers,
+                                onMapCreated: (GoogleMapController controller) {
+                                  _controller = controller;
+                                  _isLoading = false;
+                                  setMarker(
+                                    track!.orderType == 'parcel'
+                                        ? Store(
+                                            latitude:
+                                                track.receiverDetails!.latitude,
+                                            longitude: track
+                                                .receiverDetails!.longitude,
+                                            address:
+                                                track.receiverDetails!.address,
+                                            name: track.receiverDetails!
+                                                .contactPersonName)
+                                        : track.store,
+                                    track.deliveryMan,
+                                    track.orderType == 'take_away'
+                                        ? Get.find<LocationController>()
+                                                    .position
+                                                    .latitude ==
+                                                0
+                                            ? track.deliveryAddress
+                                            : AddressModel(
+                                                latitude: Get.find<
+                                                        LocationController>()
+                                                    .position
+                                                    .latitude
+                                                    .toString(),
+                                                longitude: Get.find<
+                                                        LocationController>()
+                                                    .position
+                                                    .longitude
+                                                    .toString(),
+                                                address: Get.find<
+                                                        LocationController>()
+                                                    .address,
+                                              )
+                                        : track.deliveryAddress,
+                                    track.orderType == 'take_away',
+                                    track.orderType == 'parcel',
+                                    track.moduleType == 'food',
+                                  );
+                                },
+                                style: Get.isDarkMode
+                                    ? Get.find<ThemeController>().darkMap
+                                    : Get.find<ThemeController>().lightMap,
+                              ),
+                            ),
+                            _isLoading
+                                ? const Center(
+                                    child: CircularProgressIndicator())
+                                : const SizedBox(),
+                            Positioned(
+                              top: Dimensions.paddingSizeSmall,
+                              left: Dimensions.paddingSizeSmall,
+                              right: Dimensions.paddingSizeSmall,
+                              child: track.orderStatus?.toLowerCase() ==
+                                      'confirmed'
+                                  ? FutureBuilder<String>(
+                                      future: _estimateArrivalTime(
+                                        LatLng(
+                                          double.tryParse(liveTrackLatLan
+                                                      .location?.latitude
+                                                      ?.toString() ??
+                                                  '0') ??
+                                              0,
+                                          double.tryParse(liveTrackLatLan
+                                                      .location?.longitude
+                                                      ?.toString() ??
+                                                  '0') ??
+                                              0,
+                                        ),
+                                        LatLng(
+                                          double.tryParse(track.deliveryAddress
+                                                      ?.latitude ?? '0') ??
+                                              0,
+                                          double.tryParse(track.deliveryAddress
+                                                      ?.longitude ??
+                                                  '0') ??
+                                              0,
+                                        ),
+                                      ),
+                                      builder: (context, snapshot) {
+                                        final eta = snapshot.data ?? '...';
+                                        return Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: Colors.blue.shade50,
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              const Icon(Icons.directions_bike,
+                                                  color: Colors.blue),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                'Arriving in $eta',
+                                                style: const TextStyle(
+                                                    fontSize: 16,
+                                                    fontWeight:
+                                                        FontWeight.w500),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      },
+                                    )
+                                  : TrackingStepperWidget(
+                                      status: track.orderStatus,
+                                      takeAway: track.orderType == 'take_away',
+                                    ),
+                            ),
+                            Positioned(
+                              right: 15,
+                              bottom: track.orderType != 'take_away' &&
+                                      track.deliveryMan == null
+                                  ? 150
+                                  : 220,
+                              child: InkWell(
+                                onTap: () => _checkPermission(() async {
+                                  AddressModel address =
+                                      await Get.find<LocationController>()
+                                          .getCurrentLocation(false,
+                                              mapController: _controller);
+                                  setMarker(
+                                    track!.orderType == 'parcel'
+                                        ? Store(
+                                            latitude:
+                                                track.receiverDetails!.latitude,
+                                            longitude: track
+                                                .receiverDetails!.longitude,
+                                            address:
+                                                track.receiverDetails!.address,
+                                            name: track.receiverDetails!
+                                                .contactPersonName)
+                                        : track.store,
+                                    track.deliveryMan,
+                                    track.orderType == 'take_away'
+                                        ? Get.find<LocationController>()
+                                                    .position
+                                                    .latitude ==
+                                                0
+                                            ? track.deliveryAddress
+                                            : AddressModel(
+                                                latitude: Get.find<
+                                                        LocationController>()
+                                                    .position
+                                                    .latitude
+                                                    .toString(),
+                                                longitude: Get.find<
+                                                        LocationController>()
+                                                    .position
+                                                    .longitude
+                                                    .toString(),
+                                                address: Get.find<
+                                                        LocationController>()
+                                                    .address,
+                                              )
+                                        : track.deliveryAddress,
+                                    track.orderType == 'take_away',
+                                    track.orderType == 'parcel',
+                                    track.moduleType == 'food',
+                                    currentAddress: address,
+                                    fromCurrentLocation: true,
+                                  );
+                                }),
+                                child: Container(
+                                  padding: const EdgeInsets.all(
+                                      Dimensions.paddingSizeSmall),
+                                  decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(50),
+                                      color: Colors.white),
+                                  child: Icon(Icons.my_location_outlined,
+                                      color: Theme.of(context).primaryColor,
+                                      size: 25),
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              bottom: Dimensions.paddingSizeSmall,
+                              left: Dimensions.paddingSizeSmall,
+                              right: Dimensions.paddingSizeSmall,
+                              child: TrackDetailsViewWidget(
+                                  status: track.orderStatus,
+                                  track: track,
+                                  showChatPermission: showChatPermission,
+                                  callback: () async {
+                                    _timer?.cancel();
+                                    await Get.toNamed(RouteHelper.getChatRoute(
+                                      notificationBody: NotificationBodyModel(
+                                          deliverymanId: track!.deliveryMan!.id,
+                                          orderId: int.parse(widget.orderID!)),
+                                      user: User(
+                                          id: track.deliveryMan!.id,
+                                          fName: track.deliveryMan!.fName,
+                                          lName: track.deliveryMan!.lName,
+                                          imageFullUrl:
+                                              track.deliveryMan!.imageFullUrl),
+                                    ));
+                                    _startApiCall();
+                                  }),
+                            ),
+                          ]))),
                 ),
-              ),
-
-              _isLoading ? const Center(child: CircularProgressIndicator()) : const SizedBox(),
-
-              Positioned(
-                top: Dimensions.paddingSizeSmall,
-                left: Dimensions.paddingSizeSmall,
-                right: Dimensions.paddingSizeSmall,
-                child: track.orderStatus?.toLowerCase() == 'confirmed'
-                    ? FutureBuilder<String>(
-                  future: _estimateArrivalTime(
-                    LatLng(
-                      double.tryParse(liveTrackLatLan.location?.latitude?.toString() ?? '0') ?? 0,
-                      double.tryParse(liveTrackLatLan.location?.longitude?.toString() ?? '0') ?? 0,
-
-                    ),
-                    LatLng(
-                      double.tryParse(track.deliveryAddress?.latitude ?? '0') ?? 0,
-                      double.tryParse(track.deliveryAddress?.longitude ?? '0') ?? 0,
-                    ),
-                  ),
-                  builder: (context, snapshot) {
-                    final eta = snapshot.data ?? '...';
-                    return Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.shade50,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.directions_bike, color: Colors.blue),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Arriving in $eta',
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                )
-                    : TrackingStepperWidget(
-                  status: track.orderStatus,
-                  takeAway: track.orderType == 'take_away',
-                ),
-              ),
-
-
-
-              Positioned(
-                right: 15, bottom: track.orderType != 'take_away' && track.deliveryMan == null ? 150 : 220,
-                child: InkWell(
-                  onTap: () => _checkPermission(() async {
-                    AddressModel address = await Get.find<LocationController>().getCurrentLocation(false, mapController: _controller);
-                    setMarker(
-                      track!.orderType == 'parcel' ? Store(latitude: track.receiverDetails!.latitude, longitude: track.receiverDetails!.longitude,
-                          address: track.receiverDetails!.address, name: track.receiverDetails!.contactPersonName) : track.store, track.deliveryMan,
-                      track.orderType == 'take_away' ? Get.find<LocationController>().position.latitude == 0 ? track.deliveryAddress : AddressModel(
-                        latitude: Get.find<LocationController>().position.latitude.toString(),
-                        longitude: Get.find<LocationController>().position.longitude.toString(),
-                        address: Get.find<LocationController>().address,
-                      ) : track.deliveryAddress, track.orderType == 'take_away', track.orderType == 'parcel', track.moduleType == 'food',
-                      currentAddress: address, fromCurrentLocation: true,
-                    );
-                  }),
-                  child: Container(
-                    padding: const EdgeInsets.all( Dimensions.paddingSizeSmall),
-                    decoration: BoxDecoration(borderRadius: BorderRadius.circular(50), color: Colors.white),
-                    child: Icon(Icons.my_location_outlined, color: Theme.of(context).primaryColor, size: 25),
-                  ),
-                ),
-              ),
-
-              Positioned(
-                bottom: Dimensions.paddingSizeSmall, left: Dimensions.paddingSizeSmall, right: Dimensions.paddingSizeSmall,
-                child: TrackDetailsViewWidget(status: track.orderStatus, track: track, showChatPermission: showChatPermission, callback: () async{
-                  _timer?.cancel();
-                  await Get.toNamed(RouteHelper.getChatRoute(
-                    notificationBody: NotificationBodyModel(deliverymanId: track!.deliveryMan!.id, orderId: int.parse(widget.orderID!)),
-                    user: User(id: track.deliveryMan!.id, fName: track.deliveryMan!.fName, lName: track.deliveryMan!.lName, imageFullUrl: track.deliveryMan!.imageFullUrl),
-                  ));
-                  _startApiCall();
-                }),
-              ),
-
-            ]))),
-          ),
-        ) : const Center(child: CircularProgressIndicator());
+              )
+            : const Center(child: CircularProgressIndicator());
       }),
     );
   }
 
   void setMarker(
-      Store? store,
-      DeliveryMan? deliveryMan,
-      AddressModel? addressModel,
-      bool takeAway,
-      bool parcel,
-      bool isRestaurant, {
-        AddressModel? currentAddress,
-        bool fromCurrentLocation = false,
-      }) async {
+    Store? store,
+    DeliveryMan? deliveryMan,
+    AddressModel? addressModel,
+    bool takeAway,
+    bool parcel,
+    bool isRestaurant, {
+    AddressModel? currentAddress,
+    bool fromCurrentLocation = false,
+  }) async {
     try {
-      BitmapDescriptor restaurantImageData = await MarkerHelper.convertAssetToBitmapDescriptor(
+      BitmapDescriptor restaurantImageData =
+          await MarkerHelper.convertAssetToBitmapDescriptor(
         width: (isRestaurant || parcel) ? 30 : 50,
-        imagePath: parcel ? Images.userMarker : isRestaurant ? Images.restaurantMarker : Images.markerStore,
+        imagePath: parcel
+            ? Images.userMarker
+            : isRestaurant
+                ? Images.restaurantMarker
+                : Images.markerStore,
       );
 
-      BitmapDescriptor deliveryBoyImageData = await MarkerHelper.convertAssetToBitmapDescriptor(
-        width: 30, imagePath: Images.deliveryIcon,
+      BitmapDescriptor deliveryBoyImageData =
+          await MarkerHelper.convertAssetToBitmapDescriptor(
+        width: 30,
+        imagePath: Images.mapDeliveryManIcon,
       );
 
-      BitmapDescriptor destinationImageData = await MarkerHelper.convertAssetToBitmapDescriptor(
-        width: 30, imagePath: takeAway ? Images.myLocationMarker : Images.homeIcon,
+      BitmapDescriptor destinationImageData =
+          await MarkerHelper.convertAssetToBitmapDescriptor(
+        width: 30,
+        imagePath: takeAway ? Images.myLocationMarker : Images.homeMap,
       );
 
       LatLngBounds? bounds;
       double rotation = 0;
       if (_controller != null && addressModel != null && store != null) {
-        if (double.parse(addressModel.latitude!) < double.parse(store.latitude!)) {
+        if (double.parse(addressModel.latitude!) <
+            double.parse(store.latitude!)) {
           bounds = LatLngBounds(
-            southwest: LatLng(double.parse(addressModel.latitude!), double.parse(addressModel.longitude!)),
-            northeast: LatLng(double.parse(store.latitude!), double.parse(store.longitude!)),
+            southwest: LatLng(double.parse(addressModel.latitude!),
+                double.parse(addressModel.longitude!)),
+            northeast: LatLng(
+                double.parse(store.latitude!), double.parse(store.longitude!)),
           );
           rotation = 0;
         } else {
           bounds = LatLngBounds(
-            southwest: LatLng(double.parse(store.latitude!), double.parse(store.longitude!)),
-            northeast: LatLng(double.parse(addressModel.latitude!), double.parse(addressModel.longitude!)),
+            southwest: LatLng(
+                double.parse(store.latitude!), double.parse(store.longitude!)),
+            northeast: LatLng(double.parse(addressModel.latitude!),
+                double.parse(addressModel.longitude!)),
           );
           rotation = 180;
         }
@@ -331,16 +469,19 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
           double.parse(currentAddress.longitude!),
         );
         _controller!.moveCamera(CameraUpdate.newCameraPosition(
-          CameraPosition(target: currentLocation, zoom: GetPlatform.isWeb ? 7 : 15),
+          CameraPosition(
+              target: currentLocation, zoom: GetPlatform.isWeb ? 7 : 15),
         ));
       }
 
       if (!fromCurrentLocation) {
         _controller!.moveCamera(CameraUpdate.newCameraPosition(
-          CameraPosition(target: centerBounds, zoom: GetPlatform.isWeb ? 10 : 17),
+          CameraPosition(
+              target: centerBounds, zoom: GetPlatform.isWeb ? 10 : 17),
         ));
         if (!ResponsiveHelper.isWeb()) {
-          zoomToFit(_controller, bounds, centerBounds, padding: GetPlatform.isWeb ? 15 : 3);
+          zoomToFit(_controller, bounds, centerBounds,
+              padding: GetPlatform.isWeb ? 15 : 3);
         }
       }
 
@@ -365,7 +506,8 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
       if (currentAddress == null && addressModel != null) {
         _markers.add(Marker(
           markerId: const MarkerId('destination'),
-          position: LatLng(double.parse(addressModel.latitude!), double.parse(addressModel.longitude!)),
+          position: LatLng(double.parse(addressModel.latitude!),
+              double.parse(addressModel.longitude!)),
           infoWindow: InfoWindow(
             title: parcel ? 'sender'.tr : 'Destination'.tr,
             snippet: addressModel.address,
@@ -377,13 +519,18 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
       if (store != null) {
         _markers.add(Marker(
           markerId: const MarkerId('store'),
-          position: LatLng(double.parse(store.latitude!), double.parse(store.longitude!)),
+          position: LatLng(
+              double.parse(store.latitude!), double.parse(store.longitude!)),
           infoWindow: InfoWindow(
             title: parcel
                 ? 'receiver'.tr
-                : Get.find<SplashController>().configModel!.moduleConfig!.module!.showRestaurantText!
-                ? 'store'.tr
-                : 'store'.tr,
+                : Get.find<SplashController>()
+                        .configModel!
+                        .moduleConfig!
+                        .module!
+                        .showRestaurantText!
+                    ? 'store'.tr
+                    : 'store'.tr,
             snippet: store.address,
           ),
           icon: restaurantImageData,
@@ -393,7 +540,8 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
       if (deliveryMan != null) {
         _markers.add(Marker(
           markerId: const MarkerId('delivery_boy'),
-          position: LatLng(double.parse(deliveryMan.lat ?? '0'), double.parse(deliveryMan.lng ?? '0')),
+          position: LatLng(double.parse(deliveryMan.lat ?? '0'),
+              double.parse(deliveryMan.lng ?? '0')),
           infoWindow: InfoWindow(
             title: 'delivery_man'.tr,
             snippet: deliveryMan.location,
@@ -426,8 +574,7 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
             jointType: JointType.round,
           ),
         );
-      }
-      else if (store != null && addressModel != null) {
+      } else if (store != null && addressModel != null) {
         LatLng storeLatLng = LatLng(
           double.parse(store.latitude!),
           double.parse(store.longitude!),
@@ -449,20 +596,19 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
           ),
         );
       }
-
-
     } catch (_) {}
 
     setState(() {});
   }
 
-
-  Future<void> zoomToFit(GoogleMapController? controller, LatLngBounds? bounds, LatLng centerBounds, {double padding = 0.5}) async {
+  Future<void> zoomToFit(GoogleMapController? controller, LatLngBounds? bounds,
+      LatLng centerBounds,
+      {double padding = 0.5}) async {
     bool keepZoomingOut = true;
 
-    while(keepZoomingOut) {
+    while (keepZoomingOut) {
       final LatLngBounds screenBounds = await controller!.getVisibleRegion();
-      if(fits(bounds!, screenBounds)){
+      if (fits(bounds!, screenBounds)) {
         keepZoomingOut = false;
         final double zoomLevel = await controller.getZoomLevel() - padding;
         controller.moveCamera(CameraUpdate.newCameraPosition(CameraPosition(
@@ -470,8 +616,7 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
           zoom: zoomLevel,
         )));
         break;
-      }
-      else {
+      } else {
         final double zoomLevel = await controller.getZoomLevel() - 0.1;
         controller.moveCamera(CameraUpdate.newCameraPosition(CameraPosition(
           target: centerBounds,
@@ -482,28 +627,36 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
   }
 
   bool fits(LatLngBounds fitBounds, LatLngBounds screenBounds) {
-    final bool northEastLatitudeCheck = screenBounds.northeast.latitude >= fitBounds.northeast.latitude;
-    final bool northEastLongitudeCheck = screenBounds.northeast.longitude >= fitBounds.northeast.longitude;
+    final bool northEastLatitudeCheck =
+        screenBounds.northeast.latitude >= fitBounds.northeast.latitude;
+    final bool northEastLongitudeCheck =
+        screenBounds.northeast.longitude >= fitBounds.northeast.longitude;
 
-    final bool southWestLatitudeCheck = screenBounds.southwest.latitude <= fitBounds.southwest.latitude;
-    final bool southWestLongitudeCheck = screenBounds.southwest.longitude <= fitBounds.southwest.longitude;
+    final bool southWestLatitudeCheck =
+        screenBounds.southwest.latitude <= fitBounds.southwest.latitude;
+    final bool southWestLongitudeCheck =
+        screenBounds.southwest.longitude <= fitBounds.southwest.longitude;
 
-    return northEastLatitudeCheck && northEastLongitudeCheck && southWestLatitudeCheck && southWestLongitudeCheck;
+    return northEastLatitudeCheck &&
+        northEastLongitudeCheck &&
+        southWestLatitudeCheck &&
+        southWestLongitudeCheck;
   }
 
   void _checkPermission(Function onTap) async {
     LocationPermission permission = await Geolocator.checkPermission();
-    if(permission == LocationPermission.denied) {
+    if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
     }
-    if(permission == LocationPermission.denied) {
+    if (permission == LocationPermission.denied) {
       showCustomSnackBar('you_have_to_allow'.tr);
-    }else if(permission == LocationPermission.deniedForever) {
+    } else if (permission == LocationPermission.deniedForever) {
       Get.dialog(const PermissionDialogWidget());
-    }else {
+    } else {
       onTap();
     }
   }
+
   ///..............live track...................
   LatLng? _previousDeliveryPosition;
 
@@ -514,7 +667,8 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
 
     try {
       var response = await http.get(
-        Uri.parse("${AppConstants.baseUrl}${AppConstants.getLocationDeliveryBoy}${widget.orderID}"),
+        Uri.parse(
+            "${AppConstants.baseUrl}${AppConstants.getLocationDeliveryBoy}${widget.orderID}"),
         headers: {
           'content-type': 'application/json',
           'accept': 'application/json',
@@ -525,19 +679,25 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
       if (jsonResponse['status'] == true) {
         liveTrackLatLan = LiveTrack.fromJson(jsonResponse);
 
-        double lat = double.tryParse(liveTrackLatLan.location?.latitude?.toString() ?? '') ?? 0;
-        double lng = double.tryParse(liveTrackLatLan.location?.longitude?.toString() ?? '') ?? 0;
+        double lat = double.tryParse(
+                liveTrackLatLan.location?.latitude?.toString() ?? '') ??
+            0;
+        double lng = double.tryParse(
+                liveTrackLatLan.location?.longitude?.toString() ?? '') ??
+            0;
         LatLng currentLatLng = LatLng(lat, lng);
 
         double rotation = 0;
         if (_previousDeliveryPosition != null) {
-          rotation = _calculateBearing(_previousDeliveryPosition!, currentLatLng);
+          rotation =
+              _calculateBearing(_previousDeliveryPosition!, currentLatLng);
         }
         _previousDeliveryPosition = currentLatLng;
 
-        BitmapDescriptor deliveryBoyImageData = await MarkerHelper.convertAssetToBitmapDescriptor(
+        BitmapDescriptor deliveryBoyImageData =
+            await MarkerHelper.convertAssetToBitmapDescriptor(
           width: 30,
-          imagePath: Images.deliveryIcon,
+          imagePath: Images.mapDeliveryManIcon,
         );
 
         Marker updatedDeliveryMarker = Marker(
@@ -545,7 +705,8 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
           position: currentLatLng,
           infoWindow: InfoWindow(
             title: 'delivery_man'.tr,
-            snippet: 'Lat: ${lat.toStringAsFixed(5)}, Lng: ${lng.toStringAsFixed(5)}',
+            snippet:
+                'Lat: ${lat.toStringAsFixed(5)}, Lng: ${lng.toStringAsFixed(5)}',
           ),
           icon: deliveryBoyImageData,
           rotation: rotation,
@@ -553,13 +714,13 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
           flat: true,
         );
 
-
-        _markers.removeWhere((marker) => marker.markerId.value == 'delivery_boy');
+        _markers
+            .removeWhere((marker) => marker.markerId.value == 'delivery_boy');
         _markers.add(updatedDeliveryMarker);
 
-
         if (_markers.any((m) => m.markerId.value == 'destination')) {
-          Marker destinationMarker = _markers.firstWhere((m) => m.markerId.value == 'destination');
+          Marker destinationMarker =
+              _markers.firstWhere((m) => m.markerId.value == 'destination');
 
           List<LatLng> route = await getRouteCoordinates(
             currentLatLng,
@@ -586,6 +747,7 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
       debugPrint("Error in updateLocationApi: $error");
     }
   }
+
   double _calculateBearing(LatLng start, LatLng end) {
     double lat1 = start.latitude * (pi / 180);
     double lat2 = end.latitude * (pi / 180);
@@ -597,9 +759,8 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
     return (bearing + 360) % 360;
   }
 
-
-
-  Future<List<LatLng>> getRouteCoordinates(LatLng origin, LatLng destination) async {
+  Future<List<LatLng>> getRouteCoordinates(
+      LatLng origin, LatLng destination) async {
     // const apiKey = 'AIzaSyCaCSJ0BZItSyXqBv8vpD1N4WBffJeKhLQ'; // Replace this!
     // const apiKey = 'AIzaSyD7fSNx2zaxcHmraMpgojfk18m3y-Spk7Y'; // Replace this!
     final url = Uri.parse(
@@ -617,8 +778,4 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
       return [];
     }
   }
-
-
 }
-
-

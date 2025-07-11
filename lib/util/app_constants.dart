@@ -13,7 +13,9 @@ class AppConstants {
   static const String webHostedUrl = 'https://6Kart.in';
   static const bool useReactWebsite = false;
   ///........mab key.................
-  static const String googleMapKey = 'AIzaSyCaCSJ0BZItSyXqBv8vpD1N4WBffJeKhLQ';
+  // static const String googleMapKey = 'AIzaSyCaCSJ0BZItSyXqBv8vpD1N4WBffJeKhLQ';
+  ///............working.............
+  static const String googleMapKey = 'AIzaSyDc60dcf4WH97EvrkRclSOwfKXumPWMgjs';
   ///.........work......poly....
   // static const String googleMapKey = 'AIzaSyD7fSNx2zaxcHmraMpgojfk18m3y-Spk7Y';
 
