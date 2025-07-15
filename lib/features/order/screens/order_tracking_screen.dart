@@ -404,40 +404,41 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
   }
 
   void setMarker(
-    Store? store,
-    DeliveryMan? deliveryMan,
-    AddressModel? addressModel,
-    bool takeAway,
-    bool parcel,
-    bool isRestaurant, {
-    AddressModel? currentAddress,
-    bool fromCurrentLocation = false,
-  }) async {
+      Store? store,
+      DeliveryMan? deliveryMan,
+      AddressModel? addressModel,
+      bool takeAway,
+      bool parcel,
+      bool isRestaurant, {
+        AddressModel? currentAddress,
+        bool fromCurrentLocation = false,
+      }) async {
     try {
       BitmapDescriptor restaurantImageData =
-          await MarkerHelper.convertAssetToBitmapDescriptor(
+      await MarkerHelper.convertAssetToBitmapDescriptor(
         width: (isRestaurant || parcel) ? 30 : 50,
         imagePath: parcel
             ? Images.userMarker
             : isRestaurant
-                ? Images.restaurantMarker
-                : Images.markerStore,
+            ? Images.restaurantMarker
+            : Images.markerStore,
       );
 
       BitmapDescriptor deliveryBoyImageData =
-          await MarkerHelper.convertAssetToBitmapDescriptor(
+      await MarkerHelper.convertAssetToBitmapDescriptor(
         width: 30,
         imagePath: Images.mapDeliveryManIcon,
       );
 
       BitmapDescriptor destinationImageData =
-          await MarkerHelper.convertAssetToBitmapDescriptor(
+      await MarkerHelper.convertAssetToBitmapDescriptor(
         width: 30,
         imagePath: takeAway ? Images.myLocationMarker : Images.homeMap,
       );
 
       LatLngBounds? bounds;
       double rotation = 0;
+
       if (_controller != null && addressModel != null && store != null) {
         if (double.parse(addressModel.latitude!) <
             double.parse(store.latitude!)) {
@@ -520,18 +521,18 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
       if (store != null) {
         _markers.add(Marker(
           markerId: const MarkerId('store'),
-          position: LatLng(
-              double.parse(store.latitude!), double.parse(store.longitude!)),
+          position:
+          LatLng(double.parse(store.latitude!), double.parse(store.longitude!)),
           infoWindow: InfoWindow(
             title: parcel
                 ? 'receiver'.tr
                 : Get.find<SplashController>()
-                        .configModel!
-                        .moduleConfig!
-                        .module!
-                        .showRestaurantText!
-                    ? 'store'.tr
-                    : 'store'.tr,
+                .configModel!
+                .moduleConfig!
+                .module!
+                .showRestaurantText!
+                ? 'store'.tr
+                : 'store'.tr,
             snippet: store.address,
           ),
           icon: restaurantImageData,
@@ -539,10 +540,13 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
       }
 
       if (deliveryMan != null) {
+        LatLng deliveryLatLng = LatLng(
+          double.parse(deliveryMan.lat ?? '0'),
+          double.parse(deliveryMan.lng ?? '0'),
+        );
         _markers.add(Marker(
           markerId: const MarkerId('delivery_boy'),
-          position: LatLng(double.parse(deliveryMan.lat ?? '0'),
-              double.parse(deliveryMan.lng ?? '0')),
+          position: deliveryLatLng,
           infoWindow: InfoWindow(
             title: 'delivery_man'.tr,
             snippet: deliveryMan.location,
@@ -554,20 +558,18 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
 
       polyLines.clear();
 
+      /// 🔥 Draw proper route polyline using Google Directions API
       if (deliveryMan != null && addressModel != null) {
-        LatLng deliveryManLatLng = LatLng(
-          double.parse(deliveryMan.lat ?? '0'),
-          double.parse(deliveryMan.lng ?? '0'),
-        );
-        LatLng destinationLatLng = LatLng(
-          double.parse(addressModel.latitude!),
-          double.parse(addressModel.longitude!),
-        );
+        LatLng start = LatLng(
+            double.parse(deliveryMan.lat ?? '0'), double.parse(deliveryMan.lng ?? '0'));
+        LatLng end = LatLng(
+            double.parse(addressModel.latitude!), double.parse(addressModel.longitude!));
+        List<LatLng> route = await getRouteCoordinates(start, end);
 
         polyLines.add(
           Polyline(
             polylineId: const PolylineId('delivery_route'),
-            points: [deliveryManLatLng, destinationLatLng],
+            points: route,
             width: 4,
             color: Colors.blue,
             startCap: Cap.roundCap,
@@ -576,19 +578,15 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
           ),
         );
       } else if (store != null && addressModel != null) {
-        LatLng storeLatLng = LatLng(
-          double.parse(store.latitude!),
-          double.parse(store.longitude!),
-        );
-        LatLng destinationLatLng = LatLng(
-          double.parse(addressModel.latitude!),
-          double.parse(addressModel.longitude!),
-        );
+        LatLng start = LatLng(double.parse(store.latitude!), double.parse(store.longitude!));
+        LatLng end = LatLng(
+            double.parse(addressModel.latitude!), double.parse(addressModel.longitude!));
+        List<LatLng> route = await getRouteCoordinates(start, end);
 
         polyLines.add(
           Polyline(
             polylineId: const PolylineId('store_to_destination'),
-            points: [storeLatLng, destinationLatLng],
+            points: route,
             width: 4,
             color: Colors.green,
             startCap: Cap.roundCap,
@@ -597,9 +595,11 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
           ),
         );
       }
-    } catch (_) {}
 
-    setState(() {});
+      setState(() {});
+    } catch (e) {
+      debugPrint('setMarker error: $e');
+    }
   }
 
   Future<void> zoomToFit(GoogleMapController? controller, LatLngBounds? bounds,
@@ -759,13 +759,14 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
     double bearing = atan2(y, x) * (180 / pi);
     return (bearing + 360) % 360;
   }
-
-  Future<List<LatLng>> getRouteCoordinates(
-      LatLng origin, LatLng destination) async {
-    // const apiKey = 'AIzaSyCaCSJ0BZItSyXqBv8vpD1N4WBffJeKhLQ'; // Replace this!
-    // const apiKey = 'AIzaSyD7fSNx2zaxcHmraMpgojfk18m3y-Spk7Y'; // Replace this!
+  Future<List<LatLng>> getRouteCoordinates(LatLng origin, LatLng destination) async {
     final url = Uri.parse(
-        "https://maps.googleapis.com/maps/api/directions/json?origin=${origin.latitude},${origin.longitude}&destination=${destination.latitude},${destination.longitude}&mode=driving&key=${AppConstants.googleMapKey}");
+        "https://maps.googleapis.com/maps/api/directions/json"
+            "?origin=${origin.latitude},${origin.longitude}"
+            "&destination=${destination.latitude},${destination.longitude}"
+            "&mode=driving"
+            "&key=${AppConstants.googleMapKey}"
+    );
 
     final response = await HttpClient().getUrl(url).then((req) => req.close());
     final responseBody = await response.transform(utf8.decoder).join();
@@ -775,8 +776,9 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
       final points = jsonData['routes'][0]['overview_polyline']['points'];
       return decodePolyline(points);
     } else {
-      print("Route fetch failed: ${jsonData['status']}");
+      debugPrint("Route fetch failed: ${jsonData['status']}");
       return [];
     }
   }
+
 }
