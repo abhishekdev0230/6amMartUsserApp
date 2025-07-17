@@ -646,6 +646,50 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
 
   ///..............live track...................
   LatLng? _previousDeliveryPosition;
+  Future<void> animateMarkerMove({
+    required LatLng from,
+    required LatLng to,
+    required MarkerId markerId,
+    required BitmapDescriptor icon,
+    Duration duration = const Duration(seconds: 2),
+  }) async {
+    const int frames = 30;
+    final double deltaLat = (to.latitude - from.latitude) / frames;
+    final double deltaLng = (to.longitude - from.longitude) / frames;
+
+    for (int i = 0; i < frames; i++) {
+      final newPosition = LatLng(
+        from.latitude + deltaLat * i,
+        from.longitude + deltaLng * i,
+      );
+
+      final marker = Marker(
+        markerId: markerId,
+        position: newPosition,
+        icon: icon,
+        flat: true,
+        anchor: const Offset(0.5, 0.5),
+      );
+
+      _markers.removeWhere((m) => m.markerId == markerId);
+      _markers.add(marker);
+
+      setState(() {});
+      await Future.delayed(duration ~/ frames);
+    }
+
+    // Set final position
+    _markers.removeWhere((m) => m.markerId == markerId);
+    _markers.add(Marker(
+      markerId: markerId,
+      position: to,
+      icon: icon,
+      flat: true,
+      anchor: const Offset(0.5, 0.5),
+    ));
+    setState(() {});
+  }
+
 
   Future<void> updateDeliveryBoyApi() async {
     HttpWithMiddleware http = HttpWithMiddleware.build(middlewares: [
@@ -654,8 +698,7 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
 
     try {
       var response = await http.get(
-        Uri.parse(
-            "${AppConstants.baseUrl}${AppConstants.getLocationDeliveryBoy}${widget.orderID}"),
+        Uri.parse("${AppConstants.baseUrl}${AppConstants.getLocationDeliveryBoy}${widget.orderID}"),
         headers: {
           'content-type': 'application/json',
           'accept': 'application/json',
@@ -666,53 +709,50 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
       if (jsonResponse['status'] == true) {
         liveTrackLatLan = LiveTrack.fromJson(jsonResponse);
 
-        double lat = double.tryParse(
-                liveTrackLatLan.location?.latitude?.toString() ?? '') ??
-            0;
-        double lng = double.tryParse(
-                liveTrackLatLan.location?.longitude?.toString() ?? '') ??
-            0;
+        double lat = double.tryParse(liveTrackLatLan.location?.latitude?.toString() ?? '') ?? 0;
+        double lng = double.tryParse(liveTrackLatLan.location?.longitude?.toString() ?? '') ?? 0;
         LatLng currentLatLng = LatLng(lat, lng);
+
+        if (lat == 0 && lng == 0) return; // ignore invalid locations
 
         double rotation = 0;
         if (_previousDeliveryPosition != null) {
-          rotation =
-              _calculateBearing(_previousDeliveryPosition!, currentLatLng);
+          rotation = _calculateBearing(_previousDeliveryPosition!, currentLatLng);
         }
-        _previousDeliveryPosition = currentLatLng;
 
-        BitmapDescriptor deliveryBoyImageData =
-            await MarkerHelper.convertAssetToBitmapDescriptor(
+        BitmapDescriptor deliveryBoyImageData = await MarkerHelper.convertAssetToBitmapDescriptor(
           width: 30,
           imagePath: Images.mapDeliveryManIcon,
         );
 
-        Marker updatedDeliveryMarker = Marker(
-          markerId: const MarkerId('delivery_boy'),
-          position: currentLatLng,
-          infoWindow: InfoWindow(
-            title: 'delivery_man'.tr,
-            snippet:
-                'Lat: ${lat.toStringAsFixed(5)}, Lng: ${lng.toStringAsFixed(5)}',
-          ),
-          icon: deliveryBoyImageData,
-          rotation: rotation,
-          anchor: const Offset(0.5, 0.5),
-          flat: true,
-        );
+        MarkerId deliveryMarkerId = const MarkerId('delivery_boy');
 
-        _markers
-            .removeWhere((marker) => marker.markerId.value == 'delivery_boy');
-        _markers.add(updatedDeliveryMarker);
+        if (_previousDeliveryPosition != null) {
+          await animateMarkerMove(
+            from: _previousDeliveryPosition!,
+            to: currentLatLng,
+            markerId: deliveryMarkerId,
+            icon: deliveryBoyImageData,
+          );
+        } else {
+          _markers.removeWhere((m) => m.markerId == deliveryMarkerId);
+          _markers.add(Marker(
+            markerId: deliveryMarkerId,
+            position: currentLatLng,
+            icon: deliveryBoyImageData,
+            rotation: rotation,
+            anchor: const Offset(0.5, 0.5),
+            flat: true,
+          ));
+          setState(() {});
+        }
+
+        _previousDeliveryPosition = currentLatLng;
 
         if (_markers.any((m) => m.markerId.value == 'destination')) {
-          Marker destinationMarker =
-              _markers.firstWhere((m) => m.markerId.value == 'destination');
+          Marker destinationMarker = _markers.firstWhere((m) => m.markerId.value == 'destination');
 
-          List<LatLng> route = await getRouteCoordinates(
-            currentLatLng,
-            destinationMarker.position,
-          );
+          List<LatLng> route = await getRouteCoordinates(currentLatLng, destinationMarker.position);
 
           polyLines = {
             Polyline(
@@ -725,8 +765,8 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
               jointType: JointType.round,
             )
           };
+          setState(() {});
         }
-        setState(() {});
       } else {
         debugPrint("Failed to update location: ${jsonResponse['message']}");
       }
@@ -734,6 +774,7 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
       debugPrint("Error in updateLocationApi: $error");
     }
   }
+
 
   double _calculateBearing(LatLng start, LatLng end) {
     double lat1 = start.latitude * (pi / 180);
