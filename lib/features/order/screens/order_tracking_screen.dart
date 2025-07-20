@@ -35,6 +35,7 @@ import 'package:sixam_mart/features/order/widgets/tracking_stepper_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'dart:math' as Math;
 
 class OrderTrackingScreen extends StatefulWidget {
   final String? orderID;
@@ -138,6 +139,7 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       appBar: CustomAppBar(title: 'order_tracking'.tr),
       endDrawer: const MenuDrawer(),
@@ -646,11 +648,13 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
 
   ///..............live track...................
   LatLng? _previousDeliveryPosition;
+
   Future<void> animateMarkerMove({
     required LatLng from,
     required LatLng to,
     required MarkerId markerId,
     required BitmapDescriptor icon,
+    double rotation = 0, // <-- ✅ Added rotation param
     Duration duration = const Duration(seconds: 2),
   }) async {
     const int frames = 30;
@@ -667,23 +671,25 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
         markerId: markerId,
         position: newPosition,
         icon: icon,
+        rotation: rotation, // <-- ✅ Set marker rotation
         flat: true,
         anchor: const Offset(0.5, 0.5),
       );
 
       _markers.removeWhere((m) => m.markerId == markerId);
       _markers.add(marker);
-
       setState(() {});
+
       await Future.delayed(duration ~/ frames);
     }
 
-    // Set final position
+    // Set final marker position
     _markers.removeWhere((m) => m.markerId == markerId);
     _markers.add(Marker(
       markerId: markerId,
       position: to,
       icon: icon,
+      rotation: rotation, // <-- ✅ Final rotation
       flat: true,
       anchor: const Offset(0.5, 0.5),
     ));
@@ -691,33 +697,56 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
   }
 
 
+  double calculateBearing(LatLng start, LatLng end) {
+    double lat1 = start.latitude * (Math.pi / 180);
+    double lon1 = start.longitude * (Math.pi / 180);
+    double lat2 = end.latitude * (Math.pi / 180);
+    double lon2 = end.longitude * (Math.pi / 180);
+
+    double dLon = lon2 - lon1;
+    double y = Math.sin(dLon) * Math.cos(lat2);
+    double x = Math.cos(lat1) * Math.sin(lat2) -
+        Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
+
+    double bearing = Math.atan2(y, x);
+    bearing = bearing * (180 / Math.pi);
+    return (bearing + 360) % 360;
+  }
+
   Future<void> updateDeliveryBoyApi() async {
     HttpWithMiddleware http = HttpWithMiddleware.build(middlewares: [
       HttpLogger(logLevel: LogLevel.BODY),
     ]);
 
     try {
+      var url = "${AppConstants.baseUrl}${AppConstants.getLocationDeliveryBoy}${widget.orderID}";
       var response = await http.get(
-        Uri.parse("${AppConstants.baseUrl}${AppConstants.getLocationDeliveryBoy}${widget.orderID}"),
+        Uri.parse(url),
         headers: {
           'content-type': 'application/json',
           'accept': 'application/json',
         },
       );
 
+      print('🔗 Request URL: $url');
+      print('📦 Response Status Code: ${response.statusCode}');
+      print('📨 Response Body: ${response.body}');
+
       Map<String, dynamic> jsonResponse = jsonDecode(response.body);
       if (jsonResponse['status'] == true) {
         liveTrackLatLan = LiveTrack.fromJson(jsonResponse);
 
-        double lat = double.tryParse(liveTrackLatLan.location?.latitude?.toString() ?? '') ?? 0;
-        double lng = double.tryParse(liveTrackLatLan.location?.longitude?.toString() ?? '') ?? 0;
+        double lat = double.tryParse(liveTrackLatLan.deliveryHistory?.latitude ?? '') ?? 0;
+        double lng = double.tryParse(liveTrackLatLan.deliveryHistory?.longitude ?? '') ?? 0;
         LatLng currentLatLng = LatLng(lat, lng);
 
-        if (lat == 0 && lng == 0) return; // ignore invalid locations
+        if (lat == 0 && lng == 0) return;
 
-        double rotation = 0;
+        print('🚚 Updated Delivery Position: $lat, $lng');
+
+        double bearing = 0;
         if (_previousDeliveryPosition != null) {
-          rotation = _calculateBearing(_previousDeliveryPosition!, currentLatLng);
+          bearing = calculateBearing(_previousDeliveryPosition!, currentLatLng);
         }
 
         BitmapDescriptor deliveryBoyImageData = await MarkerHelper.convertAssetToBitmapDescriptor(
@@ -740,52 +769,24 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
             markerId: deliveryMarkerId,
             position: currentLatLng,
             icon: deliveryBoyImageData,
-            rotation: rotation,
-            anchor: const Offset(0.5, 0.5),
             flat: true,
+            anchor: const Offset(0.5, 0.5),
+            rotation: bearing,
           ));
           setState(() {});
         }
 
         _previousDeliveryPosition = currentLatLng;
-
-        if (_markers.any((m) => m.markerId.value == 'destination')) {
-          Marker destinationMarker = _markers.firstWhere((m) => m.markerId.value == 'destination');
-
-          List<LatLng> route = await getRouteCoordinates(currentLatLng, destinationMarker.position);
-
-          polyLines = {
-            Polyline(
-              polylineId: const PolylineId('delivery_route'),
-              points: route,
-              width: 4,
-              color: Colors.blue,
-              startCap: Cap.roundCap,
-              endCap: Cap.roundCap,
-              jointType: JointType.round,
-            )
-          };
-          setState(() {});
-        }
-      } else {
-        debugPrint("Failed to update location: ${jsonResponse['message']}");
       }
     } catch (error) {
-      debugPrint("Error in updateLocationApi: $error");
+      debugPrint("❌ Error in updateLocationApi: $error");
     }
   }
 
 
-  double _calculateBearing(LatLng start, LatLng end) {
-    double lat1 = start.latitude * (pi / 180);
-    double lat2 = end.latitude * (pi / 180);
-    double deltaLng = (end.longitude - start.longitude) * (pi / 180);
 
-    double y = sin(deltaLng) * cos(lat2);
-    double x = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(deltaLng);
-    double bearing = atan2(y, x) * (180 / pi);
-    return (bearing + 360) % 360;
-  }
+
+
   Future<List<LatLng>> getRouteCoordinates(LatLng origin, LatLng destination) async {
     final url = Uri.parse(
         "https://maps.googleapis.com/maps/api/directions/json"
