@@ -111,30 +111,40 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
 
   Future<String> _estimateArrivalTime(LatLng origin, LatLng destination) async {
     final url = Uri.parse(
-      'https://maps.googleapis.com/maps/api/distancematrix/json'
-      '?origins=${origin.latitude},${origin.longitude}'
-      '&destinations=${destination.latitude},${destination.longitude}'
-      '&mode=driving&key=${AppConstants.googleMapKey}',
+      'https://maps.gomaps.pro/maps/api/directions/json'
+          '?origin=${origin.latitude},${origin.longitude}'
+          '&destination=${destination.latitude},${destination.longitude}'
+          '&mode=driving'
+          '&key=${AppConstants.googleMapKey}', // Use your GoMaps key here
     );
 
     try {
-      final response =
-          await HttpClient().getUrl(url).then((req) => req.close());
+      final response = await HttpClient().getUrl(url).then((req) => req.close());
       final body = await response.transform(utf8.decoder).join();
       final data = jsonDecode(body);
 
-      if (data['status'] == 'OK') {
-        final duration = data['rows'][0]['elements'][0]['duration']
-            ['text']; // e.g., "8 mins"
-        return duration;
+      if (data['status'] == 'OK' && data['routes'].isNotEmpty) {
+        final duration = data['routes'][0]['legs'][0]['duration']['text'];
+        return duration; // e.g., "14 mins"
       } else {
-        debugPrint('Distance Matrix Error: ${data['status']}');
-        return "N/A";
+        debugPrint('GoMaps Directions API Error: ${data['status']}');
+        return 'N/A';
       }
     } catch (e) {
-      debugPrint('ETA Error: $e');
-      return "N/A";
+      debugPrint('ETA Error (Directions): $e');
+      return 'N/A';
     }
+  }
+
+
+  Future<String> _manualEta(LatLng start, LatLng end) async {
+    double distance = Geolocator.distanceBetween(
+      start.latitude, start.longitude,
+      end.latitude, end.longitude,
+    );
+    double etaSeconds = distance / 11.11; // average ~40 km/h
+    final duration = Duration(seconds: etaSeconds.round());
+    return "${duration.inMinutes} mins";
   }
 
   @override
@@ -788,25 +798,42 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
 
 
   Future<List<LatLng>> getRouteCoordinates(LatLng origin, LatLng destination) async {
+    final apiKey = AppConstants.googleMapKey; // or gomapsKey if different
+
     final url = Uri.parse(
-        "https://maps.googleapis.com/maps/api/directions/json"
-            "?origin=${origin.latitude},${origin.longitude}"
-            "&destination=${destination.latitude},${destination.longitude}"
-            "&mode=driving"
-            "&key=${AppConstants.googleMapKey}"
+      'https://maps.gomaps.pro/maps/api/directions/json'
+          '?origin=${origin.latitude},${origin.longitude}'
+          '&destination=${destination.latitude},${destination.longitude}'
+          '&key=$apiKey',
     );
 
-    final response = await HttpClient().getUrl(url).then((req) => req.close());
-    final responseBody = await response.transform(utf8.decoder).join();
-    final jsonData = jsonDecode(responseBody);
+    try {
+      final response = await HttpClient().getUrl(url).then((req) => req.close());
+      final responseBody = await response.transform(utf8.decoder).join();
+      final jsonData = jsonDecode(responseBody);
 
-    if (jsonData['status'] == 'OK') {
-      final points = jsonData['routes'][0]['overview_polyline']['points'];
-      return decodePolyline(points);
-    } else {
-      debugPrint("Route fetch failed: ${jsonData['status']}");
+      print('Directions API URL: $url');
+      print('Status Code: ${response.statusCode}');
+      print('Response Body: $responseBody');
+
+      if (jsonData['status'] != 'OK') {
+        debugPrint('GoMaps Directions API Error: ${jsonData['status']} - ${jsonData['error_message'] ?? 'No error message'}');
+        return [];
+      }
+
+      if (jsonData['routes'].isNotEmpty) {
+        final encodedPolyline = jsonData['routes'][0]['overview_polyline']['points'];
+        final points = decodePolyline(encodedPolyline);
+        return points;
+      } else {
+        debugPrint('No routes returned from GoMaps API.');
+        return [];
+      }
+    } catch (e) {
+      debugPrint('GoMaps Polyline error: $e');
       return [];
     }
   }
+
 
 }

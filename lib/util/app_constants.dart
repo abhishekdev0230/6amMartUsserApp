@@ -15,7 +15,8 @@ class AppConstants {
   ///........mab key.................
   // static const String googleMapKey = 'AIzaSyCaCSJ0BZItSyXqBv8vpD1N4WBffJeKhLQ';
   ///............working.............
-  static const String googleMapKey = 'AIzaSyDc60dcf4WH97EvrkRclSOwfKXumPWMgjs';
+  // static const String googleMapKey = 'AIzaSyDc60dcf4WH97EvrkRclSOwfKXumPWMgjs';
+  static const String googleMapKey = 'AlzaSykOgM2u0Csg8uEo8Sz8xeU96g8_eqx2pyI';
   ///.........work......poly....
   // static const String googleMapKey = 'AIzaSyD7fSNx2zaxcHmraMpgojfk18m3y-Spk7Y';
 
