@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:sixam_mart/features/cart/controllers/cart_controller.dart';
 import 'package:sixam_mart/features/coupon/controllers/coupon_controller.dart';
 import 'package:sixam_mart/features/language/controllers/language_controller.dart';
+import 'package:sixam_mart/features/payment/screens/payment_screen.dart';
 import 'package:sixam_mart/features/splash/controllers/splash_controller.dart';
 import 'package:sixam_mart/features/store/controllers/store_controller.dart';
 import 'package:sixam_mart/features/profile/controllers/profile_controller.dart';
@@ -479,11 +480,25 @@ class CheckoutController extends GetxController implements GetxService {
 
           html.window.open(selectedUrl,"_self");
         } else{
-          Get.offNamed(RouteHelper.getPaymentRoute(
-            orderID, Get.find<ProfileController>().userInfoModel?.id ?? (userID.isNotEmpty ? int.parse(userID) : 0), orderType, amount,
-            isCashOnDeliveryActive, digitalPaymentName, guestId: userID.isNotEmpty ? userID : AuthHelper.getGuestId(),
+          Get.to(() => PaymentScreen(
+            orderId:  int.parse(orderID),
+            userId: Get.find<ProfileController>().userInfoModel?.id ?? (userID.isNotEmpty ? int.parse(userID) : 0),
+            orderType: orderType.toString(),
+            amount: amount,
+            isCashOnDelivery: isCashOnDeliveryActive,
+            digitalPaymentName: digitalPaymentName,
+            guestId: userID.isNotEmpty ? userID : AuthHelper.getGuestId(),
             contactNumber: contactNumber,
-          ));
+          )
+          );
+
+          // Get.offNamed(RouteHelper.getPaymentRoute(
+          //   int.parse(orderID), Get.find<ProfileController>().userInfoModel?.id ?? (userID.isNotEmpty ? int.parse(userID) : 0), orderType!, amount,
+          //   isCashOnDeliveryActive, digitalPaymentName, guestId: userID.isNotEmpty ? userID : AuthHelper.getGuestId(),
+          //   contactNumber: contactNumber,
+          // )
+          //
+          // );
         }
       } else {
         double total = ((amount / 100) * Get.find<SplashController>().configModel!.loyaltyPointItemPurchasePoint!);

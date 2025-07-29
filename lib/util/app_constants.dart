@@ -19,7 +19,8 @@ class AppConstants {
   ///.........work......poly....
   // static const String googleMapKey = 'AIzaSyD7fSNx2zaxcHmraMpgojfk18m3y-Spk7Y';
 
-
+///.......razorpay.......
+  static const String razorpayKey = 'rzp_live_qECjJ410eV0WiM';
 
   // static const String baseUrl = 'https://6ammart-admin.6amtech.com';
 

@@ -215,8 +215,7 @@ class RouteHelper {
   static String getOrderSuccessRoute(String orderID, String? contactNumber, {bool? createAccount, String guestId = ''}) {
     return '$orderSuccess?id=$orderID&contact_number=$contactNumber&create_account=$createAccount&guest_id=$guestId';
   }
-  static String getPaymentRoute(String id, int? user, String? type, double amount, bool? codDelivery, String? paymentMethod, {required String guestId, String? contactNumber, String? addFundUrl, String? subscriptionUrl, int? storeId, bool? createAccount, int? createUserId}
-      ) => '$payment?id=$id&user=$user&type=$type&amount=$amount&cod-delivery=$codDelivery&add-fund-url=$addFundUrl&payment-method=$paymentMethod&guest-id=$guestId&number=$contactNumber&subscription-url=$subscriptionUrl&store_id=$storeId&create_account=$createAccount&create_user_id=$createUserId';
+  static String getPaymentRoute(String id, int? user, String? type, double amount, bool? codDelivery, String? paymentMethod, {required String guestId, String? contactNumber, String? addFundUrl, String? subscriptionUrl, int? storeId, bool? createAccount, int? createUserId}) => '$payment?id=$id&user=$user&type=$type&amount=$amount&cod-delivery=$codDelivery&add-fund-url=$addFundUrl&payment-method=$paymentMethod&guest-id=$guestId&number=$contactNumber&subscription-url=$subscriptionUrl&store_id=$storeId&create_account=$createAccount&create_user_id=$createUserId';
   static String getCheckoutRoute(String page,{int? storeId}) => '$checkout?page=$page&store-id=$storeId';
   static String getOrderTrackingRoute(int? id, String? contactNumber) => '$orderTracking?id=$id&number=$contactNumber';
   static String getBasicCampaignRoute(BasicCampaignModel basicCampaignModel) {
@@ -431,10 +430,22 @@ class RouteHelper {
       return getRoute(AppConstants.payInWevView ? PaymentWebViewScreen(
         orderModel: order, isCashOnDelivery: isCodActive, addFundUrl: addFundUrl, paymentMethod: paymentMethod, guestId: guestId,
         contactNumber: number, subscriptionUrl: subscriptionUrl, storeId: storeId, createAccount: createAccount,
-      ) : PaymentScreen(
+      ) :PaymentScreen(
+        orderId: order.id!,
+        userId: order.userId ?? 0,
+        orderType: order.orderType ?? '',
+        amount: order.orderAmount ?? 0.0,
+        isCashOnDelivery: isCodActive,
+        digitalPaymentName: paymentMethod,
+        guestId: guestId,
+        contactNumber: number,
+      )
+
+        /*PaymentScreen(
         orderModel: order, isCashOnDelivery: isCodActive, addFundUrl: addFundUrl, paymentMethod: paymentMethod, guestId: guestId,
         contactNumber: number, subscriptionUrl: subscriptionUrl, storeId: storeId, createAccount: createAccount, createUserId: createUserId,
-      ));
+      )*/
+      );
     }),
     GetPage(name: checkout, page: () {
       CheckoutScreen? checkoutScreen = Get.arguments;
