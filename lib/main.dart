@@ -50,22 +50,49 @@ Future<void> main() async {
     return true;
   };*/
 
-  if (GetPlatform.isWeb) {
-    await Firebase.initializeApp(
-        options: const FirebaseOptions(
-            apiKey: "AIzaSyD0Z911mOoWCVkeGdjhIKwWFPRgvd6ZyAw",
-            authDomain: "stackmart-500c7.firebaseapp.com",
-            projectId: "stackmart-500c7",
-            storageBucket: "stackmart-500c7.appspot.com",
-            messagingSenderId: "491987943015",
-            appId: "1:491987943015:web:d8bc7ab8dbc9991c8f1ec2"));
-  } else if (GetPlatform.isAndroid) {
+  // if (GetPlatform.isWeb) {
+  //   await Firebase.initializeApp(
+  //       options: const FirebaseOptions(
+  //           apiKey: "AIzaSyD0Z911mOoWCVkeGdjhIKwWFPRgvd6ZyAw",
+  //           authDomain: "stackmart-500c7.firebaseapp.com",
+  //           projectId: "stackmart-500c7",
+  //           storageBucket: "stackmart-500c7.appspot.com",
+  //           messagingSenderId: "491987943015",
+  //           appId: "1:491987943015:web:d8bc7ab8dbc9991c8f1ec2"));
+  // } else if (GetPlatform.isAndroid) {
+  //   await Firebase.initializeApp(
+  //     options: const FirebaseOptions(
+  //       apiKey: "AIzaSyCc3OCd5I2xSlnftZ4bFAbuCzMhgQHLivA",
+  //       appId: "1:491987943015:android:a6fb4303cc4bf3d18f1ec2",
+  //       messagingSenderId: "491987943015",
+  //       projectId: "stackmart-500c7",
+  //     ),
+  //   );
+  // } else {
+  //   await Firebase.initializeApp();
+  // }
+  if(GetPlatform.isWeb){
+    await Firebase.initializeApp(options: const FirebaseOptions(
+        apiKey: "AIzaSyAvLNWt4EbQG2ZXNFMgssUsqZgN2qfN2Oo",
+        authDomain: "my-food-kart.firebaseapp.com",
+        databaseURL: "https://my-food-kart-default-rtdb.firebaseio.com",
+        projectId: "my-food-kart",
+        storageBucket: "my-food-kart.firebasestorage.app",
+        messagingSenderId: "561809267214",
+        appId: "1:561809267214:web:992e19b244b7b1ab983a5f",
+        measurementId: "G-23HJX7B0VF"
+    ));
+  } else if(GetPlatform.isAndroid) {
     await Firebase.initializeApp(
       options: const FirebaseOptions(
-        apiKey: "AIzaSyCc3OCd5I2xSlnftZ4bFAbuCzMhgQHLivA",
-        appId: "1:491987943015:android:a6fb4303cc4bf3d18f1ec2",
-        messagingSenderId: "491987943015",
-        projectId: "stackmart-500c7",
+          apiKey: "AIzaSyAvLNWt4EbQG2ZXNFMgssUsqZgN2qfN2Oo",
+          authDomain: "my-food-kart.firebaseapp.com",
+          databaseURL: "https://my-food-kart-default-rtdb.firebaseio.com",
+          projectId: "my-food-kart",
+          storageBucket: "my-food-kart.firebasestorage.app",
+          messagingSenderId: "561809267214",
+          appId: "1:561809267214:web:992e19b244b7b1ab983a5f",
+          measurementId: "G-23HJX7B0VF"
       ),
     );
   } else {
