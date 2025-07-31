@@ -38,74 +38,51 @@ Future<void> main() async {
   }
   setPathUrlStrategy();
 
-  /*///Pass all uncaught "fatal" errors from the framework to Crashlytics
-  FlutterError.onError = (errorDetails) {
-    FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
-  };
-
-
-  ///Pass all uncaught asynchronous errors that aren't handled by the Flutter framework to Crashlytics
-  PlatformDispatcher.instance.onError = (error, stack) {
-    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
-    return true;
-  };*/
-
-  // if (GetPlatform.isWeb) {
-  //   await Firebase.initializeApp(
-  //       options: const FirebaseOptions(
-  //           apiKey: "AIzaSyD0Z911mOoWCVkeGdjhIKwWFPRgvd6ZyAw",
-  //           authDomain: "stackmart-500c7.firebaseapp.com",
-  //           projectId: "stackmart-500c7",
-  //           storageBucket: "stackmart-500c7.appspot.com",
-  //           messagingSenderId: "491987943015",
-  //           appId: "1:491987943015:web:d8bc7ab8dbc9991c8f1ec2"));
-  // } else if (GetPlatform.isAndroid) {
-  //   await Firebase.initializeApp(
-  //     options: const FirebaseOptions(
-  //       apiKey: "AIzaSyCc3OCd5I2xSlnftZ4bFAbuCzMhgQHLivA",
-  //       appId: "1:491987943015:android:a6fb4303cc4bf3d18f1ec2",
-  //       messagingSenderId: "491987943015",
-  //       projectId: "stackmart-500c7",
-  //     ),
-  //   );
-  // } else {
-  //   await Firebase.initializeApp();
-  // }
-  if(GetPlatform.isWeb){
-    await Firebase.initializeApp(options: const FirebaseOptions(
-        apiKey: "AIzaSyAvLNWt4EbQG2ZXNFMgssUsqZgN2qfN2Oo",
-        authDomain: "my-food-kart.firebaseapp.com",
-        databaseURL: "https://my-food-kart-default-rtdb.firebaseio.com",
-        projectId: "my-food-kart",
-        storageBucket: "my-food-kart.firebasestorage.app",
-        messagingSenderId: "561809267214",
-        appId: "1:561809267214:web:992e19b244b7b1ab983a5f",
-        measurementId: "G-23HJX7B0VF"
-    ));
-  } else if(GetPlatform.isAndroid) {
-    await Firebase.initializeApp(
-      options: const FirebaseOptions(
-          apiKey: "AIzaSyAvLNWt4EbQG2ZXNFMgssUsqZgN2qfN2Oo",
-          authDomain: "my-food-kart.firebaseapp.com",
-          databaseURL: "https://my-food-kart-default-rtdb.firebaseio.com",
-          projectId: "my-food-kart",
-          storageBucket: "my-food-kart.firebasestorage.app",
-          messagingSenderId: "561809267214",
-          appId: "1:561809267214:web:992e19b244b7b1ab983a5f",
-          measurementId: "G-23HJX7B0VF"
-      ),
-    );
-  } else {
-    await Firebase.initializeApp();
+  // Firebase initialization with duplicate-app guard
+  try {
+    if (Firebase.apps.isEmpty) {
+      if (GetPlatform.isWeb) {
+        await Firebase.initializeApp(
+          options: const FirebaseOptions(
+            apiKey: "AIzaSyAvLNWt4EbQG2ZXNFMgssUsqZgN2qfN2Oo",
+            authDomain: "my-food-kart.firebaseapp.com",
+            databaseURL: "https://my-food-kart-default-rtdb.firebaseio.com",
+            projectId: "my-food-kart",
+            storageBucket: "my-food-kart.firebasestorage.app",
+            messagingSenderId: "561809267214",
+            appId: "1:561809267214:web:992e19b244b7b1ab983a5f",
+            measurementId: "G-23HJX7B0VF",
+          ),
+        );
+      } else if (GetPlatform.isAndroid) {
+        await Firebase.initializeApp(
+          options: const FirebaseOptions(
+            apiKey: "AIzaSyAvLNWt4EbQG2ZXNFMgssUsqZgN2qfN2Oo",
+            appId: "1:561809267214:android:dbd60207c7263955983a5f",
+            messagingSenderId: "561809267214",
+            projectId: "my-food-kart",
+          ),
+        );
+      } else {
+        await Firebase.initializeApp();
+      }
+    }
+  } catch (e) {
+    if (!e.toString().contains("duplicate-app")) {
+      rethrow;
+    }
+    // else: ignore duplicate init error
   }
 
+  // Dependency Injection and Language Load
   Map<String, Map<String, String>> languages = await di.init();
 
+  // Firebase Messaging Setup
   NotificationBodyModel? body;
   try {
     if (GetPlatform.isMobile) {
       final RemoteMessage? remoteMessage =
-          await FirebaseMessaging.instance.getInitialMessage();
+      await FirebaseMessaging.instance.getInitialMessage();
       if (remoteMessage != null) {
         body = NotificationHelper.convertNotification(remoteMessage.data);
       }
@@ -114,6 +91,7 @@ Future<void> main() async {
     }
   } catch (_) {}
 
+  // Facebook Auth Web init
   if (ResponsiveHelper.isWeb()) {
     await FacebookAuth.instance.webAndDesktopInitialize(
       appId: "380903914182154",
@@ -125,6 +103,7 @@ Future<void> main() async {
 
   runApp(MyApp(languages: languages, body: body));
 }
+
 
 class MyApp extends StatefulWidget {
   final Map<String, Map<String, String>>? languages;

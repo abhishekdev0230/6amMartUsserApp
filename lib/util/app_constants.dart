@@ -4,7 +4,7 @@ import 'package:sixam_mart/features/language/domain/models/language_model.dart';
 import 'package:sixam_mart/util/images.dart';
 
 class AppConstants {
-  static const String appName = '6amMart';
+  static const String appName = 'MyFoodKart';
   static const double appVersion = 3.1;
   static const String fontFamily = 'Roboto';
   static const bool payInWevView = false;
@@ -24,7 +24,9 @@ class AppConstants {
   static const String razorpayKey = 'rzp_live_qECjJ410eV0WiM';
 
   // static const String baseUrl = 'https://6ammart-admin.6amtech.com';
-
+///.........live...............
+//     static const String baseUrl = 'https://admin.myfoodkart.co.in';
+  ///.............dev................
   static const String baseUrl = 'https://6Kart.in';
   static const String categoryUri = '/api/v1/categories';
   static const String bannerUri = '/api/v1/banners';

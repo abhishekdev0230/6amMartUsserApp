@@ -162,13 +162,14 @@ class SplashScreenState extends State<SplashScreen> {
     }
 
     return Scaffold(
+
       key: _globalKey,
       body: GetBuilder<SplashController>(builder: (splashController) {
         return Center(
           child: splashController.hasConnection ? Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Image.asset(Images.logo, width: 200),
+              Image.asset(Images.splashLogo, width: 200),
               const SizedBox(height: Dimensions.paddingSizeSmall),
             ],
           ) : NoInternetScreen(child: SplashScreen(body: widget.body)),
