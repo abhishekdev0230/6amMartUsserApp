@@ -9,21 +9,22 @@ class AppConstants {
   static const String fontFamily = 'Roboto';
   static const bool payInWevView = false;
   static const int balanceInputLen = 10;
-  // static const String webHostedUrl = 'https://6ammart-web.6amtech.com';
+  // static const String webHostedUrl = 'https://MyFoodKart-web.6amtech.com';
   static const String webHostedUrl = 'https://6Kart.in';
   static const bool useReactWebsite = false;
   ///........mab key.................
   // static const String googleMapKey = 'AIzaSyCaCSJ0BZItSyXqBv8vpD1N4WBffJeKhLQ';
   ///............working.............
   // static const String googleMapKey = 'AIzaSyDc60dcf4WH97EvrkRclSOwfKXumPWMgjs';
-  static const String googleMapKey = 'AlzaSykOgM2u0Csg8uEo8Sz8xeU96g8_eqx2pyI';
+  ///................routerKey
+  static const String googleMapKeyRouter = 'AIzaSyDc60dcf4WH97EvrkRclSOwfKXumPWMgjs';
   ///.........work......poly....
   // static const String googleMapKey = 'AIzaSyD7fSNx2zaxcHmraMpgojfk18m3y-Spk7Y';
 
 ///.......razorpay.......
   static const String razorpayKey = 'rzp_live_qECjJ410eV0WiM';
 
-  // static const String baseUrl = 'https://6ammart-admin.6amtech.com';
+  // static const String baseUrl = 'https://MyFoodKart-admin.6amtech.com';
 ///.........live...............
 //     static const String baseUrl = 'https://admin.myfoodkart.co.in';
   ///.............dev................
@@ -215,36 +216,36 @@ class AppConstants {
   static const String getProviderBannerUri = '/api/v1/rental/banners';
 
   /// Shared Key
-  static const String theme = '6ammart_theme';
-  static const String token = '6ammart_token';
-  static const String countryCode = '6ammart_country_code';
-  static const String languageCode = '6ammart_language_code';
+  static const String theme = 'MyFoodKart_theme';
+  static const String token = 'MyFoodKart_token';
+  static const String countryCode = 'MyFoodKart_country_code';
+  static const String languageCode = 'MyFoodKart_language_code';
   static const String cacheCountryCode = 'cache_country_code';
   static const String cacheLanguageCode = 'cache_language_code';
-  static const String cartList = '6ammart_cart_list';
-  static const String userPassword = '6ammart_user_password';
-  static const String userAddress = '6ammart_user_address';
-  static const String userNumber = '6ammart_user_number';
-  static const String userCountryCode = '6ammart_user_country_code';
-  static const String notification = '6ammart_notification';
+  static const String cartList = 'MyFoodKart_cart_list';
+  static const String userPassword = 'MyFoodKart_user_password';
+  static const String userAddress = 'MyFoodKart_user_address';
+  static const String userNumber = 'MyFoodKart_user_number';
+  static const String userCountryCode = 'MyFoodKart_user_country_code';
+  static const String notification = 'MyFoodKart_notification';
   static const String notificationIdList = 'notification_id_list';
-  static const String searchHistory = '6ammart_search_history';
-  static const String intro = '6ammart_intro';
-  static const String notificationCount = '6ammart_notification_count';
-  static const String dmTipIndex = '6ammart_dm_tip_index';
-  static const String earnPoint = '6ammart_earn_point';
-  static const String acceptCookies = '6ammart_accept_cookies';
-  static const String suggestedLocation = '6ammart_suggested_location';
-  static const String walletAccessToken = '6ammart_wallet_access_token';
-  static const String guestId = '6ammart_guest_id';
-  static const String guestNumber = '6ammart_guest_number';
-  static const String referBottomSheet = '6ammart_reffer_bottomsheet_show';
-  static const String dmRegisterSuccess = '6ammart_dm_registration_success';
-  static const String isRestaurantRegister = '6ammart_store_registration';
+  static const String searchHistory = 'MyFoodKart_search_history';
+  static const String intro = 'MyFoodKart_intro';
+  static const String notificationCount = 'MyFoodKart_notification_count';
+  static const String dmTipIndex = 'MyFoodKart_dm_tip_index';
+  static const String earnPoint = 'MyFoodKart_earn_point';
+  static const String acceptCookies = 'MyFoodKart_accept_cookies';
+  static const String suggestedLocation = 'MyFoodKart_suggested_location';
+  static const String walletAccessToken = 'MyFoodKart_wallet_access_token';
+  static const String guestId = 'MyFoodKart_guest_id';
+  static const String guestNumber = 'MyFoodKart_guest_number';
+  static const String referBottomSheet = 'MyFoodKart_reffer_bottomsheet_show';
+  static const String dmRegisterSuccess = 'MyFoodKart_dm_registration_success';
+  static const String isRestaurantRegister = 'MyFoodKart_store_registration';
 
   ///taxi
-  static const String taxiSearchHistory = '6ammart_taxi_search_history';
-  static const String taxiSearchAddressHistory = '6ammart_taxi_search_address_history';
+  static const String taxiSearchHistory = 'MyFoodKart_taxi_search_history';
+  static const String taxiSearchAddressHistory = 'MyFoodKart_taxi_search_address_history';
 
   static const String topic = 'all_zone_customer';
   static const String zoneId = 'zoneId';

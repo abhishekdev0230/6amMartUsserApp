@@ -151,7 +151,7 @@
 				}
 			],
 			"type" : "INTERNAL",
-			"value" : "/Users/6amtech/Projects/6amMart-User-App/android/app/.cxx/RelWithDebInfo/24f491l1/x86_64"
+			"value" : "/Users/6amtech/Projects/MyFoodKart-User-App/android/app/.cxx/RelWithDebInfo/24f491l1/x86_64"
 		},
 		{
 			"name" : "CMAKE_CACHE_MAJOR_VERSION",
@@ -731,7 +731,7 @@
 				}
 			],
 			"type" : "UNINITIALIZED",
-			"value" : "/Users/6amtech/Projects/6amMart-User-App/build/app/intermediates/cxx/RelWithDebInfo/24f491l1/obj/x86_64"
+			"value" : "/Users/6amtech/Projects/MyFoodKart-User-App/build/app/intermediates/cxx/RelWithDebInfo/24f491l1/obj/x86_64"
 		},
 		{
 			"name" : "CMAKE_LINKER",
@@ -1003,7 +1003,7 @@
 				}
 			],
 			"type" : "UNINITIALIZED",
-			"value" : "/Users/6amtech/Projects/6amMart-User-App/build/app/intermediates/cxx/RelWithDebInfo/24f491l1/obj/x86_64"
+			"value" : "/Users/6amtech/Projects/MyFoodKart-User-App/build/app/intermediates/cxx/RelWithDebInfo/24f491l1/obj/x86_64"
 		},
 		{
 			"name" : "CMAKE_SHARED_LINKER_FLAGS",
@@ -1323,7 +1323,7 @@
 				}
 			],
 			"type" : "STATIC",
-			"value" : "/Users/6amtech/Projects/6amMart-User-App/android/app/.cxx/RelWithDebInfo/24f491l1/x86_64"
+			"value" : "/Users/6amtech/Projects/MyFoodKart-User-App/android/app/.cxx/RelWithDebInfo/24f491l1/x86_64"
 		},
 		{
 			"name" : "Project_IS_TOP_LEVEL",

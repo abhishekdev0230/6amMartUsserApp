@@ -6,14 +6,14 @@
     [
       "/Users/6amtech/Library/Android/sdk/cmake/3.22.1/bin/ninja",
       "-C",
-      "/Users/6amtech/Documents/6amtech/6ammart/6amMart-User-App/android/app/.cxx/RelWithDebInfo/454w3j40/arm64-v8a",
+      "/Users/6amtech/Documents/6amtech/MyFoodKart/MyFoodKart-User-App/android/app/.cxx/RelWithDebInfo/454w3j40/arm64-v8a",
       "clean"
     ]
   ],
   "buildTargetsCommandComponents": [
     "/Users/6amtech/Library/Android/sdk/cmake/3.22.1/bin/ninja",
     "-C",
-    "/Users/6amtech/Documents/6amtech/6ammart/6amMart-User-App/android/app/.cxx/RelWithDebInfo/454w3j40/arm64-v8a",
+    "/Users/6amtech/Documents/6amtech/MyFoodKart/MyFoodKart-User-App/android/app/.cxx/RelWithDebInfo/454w3j40/arm64-v8a",
     "{LIST_OF_TARGETS_TO_BUILD}"
   ],
   "libraries": {}

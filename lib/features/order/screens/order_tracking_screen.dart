@@ -109,13 +109,39 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
     });
   }
 
+  // Future<String> _estimateArrivalTime(LatLng origin, LatLng destination) async {
+  //   final url = Uri.parse(
+  //     'https://maps.gomaps.pro/maps/api/directions/json'
+  //         '?origin=${origin.latitude},${origin.longitude}'
+  //         '&destination=${destination.latitude},${destination.longitude}'
+  //         '&mode=driving'
+  //         '&key=${AppConstants.googleMapKeyRouter}', // Use your GoMaps key here
+  //   );
+  //
+  //   try {
+  //     final response = await HttpClient().getUrl(url).then((req) => req.close());
+  //     final body = await response.transform(utf8.decoder).join();
+  //     final data = jsonDecode(body);
+  //
+  //     if (data['status'] == 'OK' && data['routes'].isNotEmpty) {
+  //       final duration = data['routes'][0]['legs'][0]['duration']['text'];
+  //       return duration; // e.g., "14 mins"
+  //     } else {
+  //       debugPrint('GoMaps Directions API Error: ${data['status']}');
+  //       return 'N/A';
+  //     }
+  //   } catch (e) {
+  //     debugPrint('ETA Error (Directions): $e');
+  //     return 'N/A';
+  //   }
+  // }
   Future<String> _estimateArrivalTime(LatLng origin, LatLng destination) async {
     final url = Uri.parse(
-      'https://maps.gomaps.pro/maps/api/directions/json'
+      'https://maps.googleapis.com/maps/api/directions/json'
           '?origin=${origin.latitude},${origin.longitude}'
           '&destination=${destination.latitude},${destination.longitude}'
           '&mode=driving'
-          '&key=${AppConstants.googleMapKey}', // Use your GoMaps key here
+          '&key=${AppConstants.googleMapKeyRouter}', // Google Maps API Key
     );
 
     try {
@@ -125,27 +151,18 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
 
       if (data['status'] == 'OK' && data['routes'].isNotEmpty) {
         final duration = data['routes'][0]['legs'][0]['duration']['text'];
-        return duration; // e.g., "14 mins"
+        return duration;
       } else {
-        debugPrint('GoMaps Directions API Error: ${data['status']}');
+        debugPrint('Google Directions API Error: ${data['status']}');
         return 'N/A';
       }
     } catch (e) {
-      debugPrint('ETA Error (Directions): $e');
+      debugPrint('ETA Error (Google Directions): $e');
       return 'N/A';
     }
   }
 
 
-  Future<String> _manualEta(LatLng start, LatLng end) async {
-    double distance = Geolocator.distanceBetween(
-      start.latitude, start.longitude,
-      end.latitude, end.longitude,
-    );
-    double etaSeconds = distance / 11.11; // average ~40 km/h
-    final duration = Duration(seconds: etaSeconds.round());
-    return "${duration.inMinutes} mins";
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -785,7 +802,6 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
           ));
           setState(() {});
         }
-
         _previousDeliveryPosition = currentLatLng;
       }
     } catch (error) {
@@ -798,12 +814,13 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
 
 
   Future<List<LatLng>> getRouteCoordinates(LatLng origin, LatLng destination) async {
-    final apiKey = AppConstants.googleMapKey; // or gomapsKey if different
+    final apiKey = AppConstants.googleMapKeyRouter;
 
     final url = Uri.parse(
-      'https://maps.gomaps.pro/maps/api/directions/json'
+      'https://maps.googleapis.com/maps/api/directions/json'
           '?origin=${origin.latitude},${origin.longitude}'
           '&destination=${destination.latitude},${destination.longitude}'
+          '&mode=driving'
           '&key=$apiKey',
     );
 
@@ -812,12 +829,12 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
       final responseBody = await response.transform(utf8.decoder).join();
       final jsonData = jsonDecode(responseBody);
 
-      print('Directions API URL: $url');
+      print('Google Directions API URL: $url');
       print('Status Code: ${response.statusCode}');
       print('Response Body: $responseBody');
 
       if (jsonData['status'] != 'OK') {
-        debugPrint('GoMaps Directions API Error: ${jsonData['status']} - ${jsonData['error_message'] ?? 'No error message'}');
+        debugPrint('Google Directions API Error: ${jsonData['status']} - ${jsonData['error_message'] ?? 'No error message'}');
         return [];
       }
 
@@ -826,14 +843,15 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
         final points = decodePolyline(encodedPolyline);
         return points;
       } else {
-        debugPrint('No routes returned from GoMaps API.');
+        debugPrint('No routes returned from Google API.');
         return [];
       }
     } catch (e) {
-      debugPrint('GoMaps Polyline error: $e');
+      debugPrint('Google Polyline error: $e');
       return [];
     }
   }
+
 
 
 }
