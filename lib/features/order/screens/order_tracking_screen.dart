@@ -773,6 +773,7 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
 
         double bearing = 0;
         if (_previousDeliveryPosition != null) {
+          
           bearing = calculateBearing(_previousDeliveryPosition!, currentLatLng);
         }
 
@@ -789,6 +790,8 @@ class OrderTrackingScreenState extends State<OrderTrackingScreen> {
             to: currentLatLng,
             markerId: deliveryMarkerId,
             icon: deliveryBoyImageData,
+            rotation: bearing,
+
           );
         } else {
           _markers.removeWhere((m) => m.markerId == deliveryMarkerId);
