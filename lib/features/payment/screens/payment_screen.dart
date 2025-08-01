@@ -356,6 +356,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     debugPrint('Payment success: ${response.paymentId}');
     // TODO: Call API to confirm order here, then redirect to success page
     Get.back();
+    Get.back();
   }
 
   void _handlePaymentError(PaymentFailureResponse response) {
