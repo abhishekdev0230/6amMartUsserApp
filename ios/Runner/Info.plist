@@ -50,11 +50,19 @@
 	<string>6d874ccc2786e43042d78823eecd5b63</string>
 	<key>FacebookDisplayName</key>
 	<string>MyFoodKart</string>
+
+	<!-- ✅ Add wallet schemes here -->
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>fbapi</string>
 		<string>fb-messenger-share-api</string>
+		<string>paytm</string>
+		<string>phonepe</string>
+		<string>tez</string>
+		<string>gpay</string>
+		<string>upi</string>
 	</array>
+
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>

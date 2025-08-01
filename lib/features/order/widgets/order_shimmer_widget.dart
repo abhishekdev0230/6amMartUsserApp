@@ -42,7 +42,7 @@ class OrderShimmerWidget extends StatelessWidget {
 
                       Row(children: [
                         Container(
-                          height: ResponsiveHelper.isDesktop(context) ? 80 : 60, width: ResponsiveHelper.isDesktop(context) ? 80 : 60,
+                          // height: ResponsiveHelper.isDesktop(context) ? 80 : 60, width: ResponsiveHelper.isDesktop(context) ? 80 : 60,
                           decoration: BoxDecoration(borderRadius: BorderRadius.circular(Dimensions.radiusSmall), color: Colors.grey[300]),
                         ),
                         const SizedBox(width: Dimensions.paddingSizeSmall),

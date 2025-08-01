@@ -311,7 +311,7 @@ class CheckoutShimmerView extends StatelessWidget {
                       Radio(activeColor: Theme.of(context).cardColor, value: 0, groupValue: 0, onChanged: (value) {}),
 
                       Container(
-                        height: 20, width: 100,
+                        height: 20,
                         decoration: BoxDecoration(
                           color: Theme.of(context).cardColor,
                           borderRadius: BorderRadius.circular(Dimensions.radiusSmall),
@@ -337,7 +337,7 @@ class CheckoutShimmerView extends StatelessWidget {
                       Radio(activeColor: Theme.of(context).cardColor, value: 0, groupValue: 0, onChanged: (value) {}),
 
                       Container(
-                        height: 20, width: 100,
+                        height: 20,
                         decoration: BoxDecoration(
                           color: Theme.of(context).cardColor,
                           borderRadius: BorderRadius.circular(Dimensions.radiusSmall),
