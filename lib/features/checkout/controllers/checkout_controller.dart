@@ -480,25 +480,25 @@ class CheckoutController extends GetxController implements GetxService {
 
           html.window.open(selectedUrl,"_self");
         } else{
-          Get.to(() => PaymentScreen(
-            orderId:  int.parse(orderID),
-            userId: Get.find<ProfileController>().userInfoModel?.id ?? (userID.isNotEmpty ? int.parse(userID) : 0),
-            orderType: orderType.toString(),
-            amount: amount,
-            isCashOnDelivery: isCashOnDeliveryActive,
-            digitalPaymentName: digitalPaymentName,
-            guestId: userID.isNotEmpty ? userID : AuthHelper.getGuestId(),
-            contactNumber: contactNumber,
-          )
-          );
-
-          // Get.offNamed(RouteHelper.getPaymentRoute(
-          //   int.parse(orderID), Get.find<ProfileController>().userInfoModel?.id ?? (userID.isNotEmpty ? int.parse(userID) : 0), orderType!, amount,
-          //   isCashOnDeliveryActive, digitalPaymentName, guestId: userID.isNotEmpty ? userID : AuthHelper.getGuestId(),
+          // Get.to(() => PaymentScreen(
+          //   orderId:  int.parse(orderID),
+          //   userId: Get.find<ProfileController>().userInfoModel?.id ?? (userID.isNotEmpty ? int.parse(userID) : 0),
+          //   orderType: orderType.toString(),
+          //   amount: amount,
+          //   isCashOnDelivery: isCashOnDeliveryActive,
+          //   digitalPaymentName: digitalPaymentName,
+          //   guestId: userID.isNotEmpty ? userID : AuthHelper.getGuestId(),
           //   contactNumber: contactNumber,
           // )
-          //
           // );
+
+          Get.offNamed(RouteHelper.getPaymentRoute(
+            int.parse(orderID).toString(), Get.find<ProfileController>().userInfoModel?.id ?? (userID.isNotEmpty ? int.parse(userID) : 0), orderType!, amount,
+            isCashOnDeliveryActive, digitalPaymentName, guestId: userID.isNotEmpty ? userID : AuthHelper.getGuestId(),
+            contactNumber: contactNumber,
+          )
+
+          );
         }
       } else {
         double total = ((amount / 100) * Get.find<SplashController>().configModel!.loyaltyPointItemPurchasePoint!);

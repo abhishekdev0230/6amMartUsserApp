@@ -114,6 +114,7 @@ class AuthRepository implements AuthRepositoryInterface{
 
   @override
   Future<ResponseModel> guestLogin() async {
+    print("djljjwlkjlwlkdjlw");
     ResponseModel responseModel;
     String? deviceToken = await saveDeviceToken();
     Response response = await apiClient.postData(AppConstants.guestLoginUri, {'fcm_token': deviceToken});
@@ -217,6 +218,7 @@ class AuthRepository implements AuthRepositoryInterface{
 
   @override
   Future<String?> saveDeviceToken() async {
+    print("jsjndsjjdskjdksjd");
     String? deviceToken = '@';
     if(!GetPlatform.isWeb) {
       try {

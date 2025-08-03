@@ -276,9 +276,129 @@
 //
 // }
 
+//
+//
+// ///........newadd...Abhishek....sdk....razorPay...................
+//
+// import 'package:flutter/material.dart';
+// import 'package:get/get.dart';
+// import 'package:razorpay_flutter/razorpay_flutter.dart';
+// import 'package:sixam_mart/util/app_constants.dart';
+// import 'package:sixam_mart/util/dimensions.dart';
+// import 'package:sixam_mart/common/widgets/custom_app_bar.dart';
+// import 'package:sixam_mart/features/checkout/widgets/payment_failed_dialog.dart';
+//
+// class PaymentScreen extends StatefulWidget {
+//   final int orderId;
+//   final int userId;
+//   final String orderType;
+//   final double amount;
+//   final bool isCashOnDelivery;
+//   final String? digitalPaymentName;
+//   final String? guestId;
+//   final String? contactNumber;
+//
+//   const PaymentScreen({
+//     Key? key,
+//     required this.orderId,
+//     required this.userId,
+//     required this.orderType,
+//     required this.amount,
+//     required this.isCashOnDelivery,
+//     this.digitalPaymentName,
+//     this.guestId,
+//     this.contactNumber,
+//   }) : super(key: key);
+//
+//   @override
+//   State<PaymentScreen> createState() => _PaymentScreenState();
+// }
+//
+// class _PaymentScreenState extends State<PaymentScreen> {
+//   late Razorpay _razorpay;
+//
+//   @override
+//   void initState() {
+//     super.initState();
+//
+//     _razorpay = Razorpay();
+//     _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
+//     _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
+//     _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
+//
+//     _startPayment();
+//   }
+//
+//   void _startPayment() {
+//     var options = {
+//       'key': AppConstants.razorpayKey,
+//       'amount': (widget.amount * 100).toInt(),
+//       'name': 'SixamMart',
+//       'description': widget.orderType,
+//       'prefill': {
+//         'contact': widget.contactNumber ?? '',
+//         'email': '${widget.guestId ?? 'guest'}@example.com',
+//       },
+//       'external': {
+//         'wallets': ['paytm']
+//       }
+//     };
+//
+//     try {
+//       _razorpay.open(options);
+//     } catch (e) {
+//       debugPrint('Razorpay open error: $e');
+//     }
+//   }
+//
+//
+//   void _handlePaymentSuccess(PaymentSuccessResponse response) {
+//     debugPrint('Payment success: ${response.paymentId}');
+//     // TODO: Call API to confirm order here, then redirect to success page
+//     Get.back();
+//     Get.back();
+//   }
+//
+//   void _handlePaymentError(PaymentFailureResponse response) {
+//     debugPrint('Payment failed: ${response.message}');
+//     Get.dialog(PaymentFailedDialog(
+//       orderID: widget.orderId.toString(),
+//       orderAmount: widget.amount,
+//       orderType: widget.orderType,
+//       maxCodOrderAmount: null,
+//       isCashOnDelivery: widget.isCashOnDelivery,
+//       guestId: widget.guestId.toString(),
+//     ));
+//   }
+//
+//
+//   void _handleExternalWallet(ExternalWalletResponse response) {
+//     debugPrint('External Wallet: ${response.walletName}');
+//     // Optional: Show a message or handle differently
+//   }
+//
+//   @override
+//   void dispose() {
+//     _razorpay.clear();
+//     super.dispose();
+//   }
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       appBar: CustomAppBar(title: 'payment'.tr, onBackPressed: () => Get.back()),
+//       body: Center(
+//         child: SizedBox(
+//           width: Dimensions.webMaxWidth,
+//           child: const Center(
+//             child: CircularProgressIndicator(),
+//           ),
+//         ),
+//       ),
+//     );
+//   }
+// }
 
-
-///........newadd...Abhishek....sdk....razorPay...................
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -316,17 +436,16 @@ class PaymentScreen extends StatefulWidget {
 
 class _PaymentScreenState extends State<PaymentScreen> {
   late Razorpay _razorpay;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-
     _razorpay = Razorpay();
     _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
     _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
     _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
-
-    _startPayment();
+    Future.delayed(const Duration(milliseconds: 500), _startPayment); // Small delay ensures screen loads first
   }
 
   void _startPayment() {
@@ -346,17 +465,17 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
     try {
       _razorpay.open(options);
+      setState(() => _isLoading = false);
     } catch (e) {
       debugPrint('Razorpay open error: $e');
+      setState(() => _isLoading = false);
     }
   }
 
-
   void _handlePaymentSuccess(PaymentSuccessResponse response) {
     debugPrint('Payment success: ${response.paymentId}');
-    // TODO: Call API to confirm order here, then redirect to success page
-    Get.back();
-    Get.back();
+    // TODO: Confirm order via API
+    Get.back(result: true);
   }
 
   void _handlePaymentError(PaymentFailureResponse response) {
@@ -371,10 +490,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
     ));
   }
 
-
   void _handleExternalWallet(ExternalWalletResponse response) {
     debugPrint('External Wallet: ${response.walletName}');
-    // Optional: Show a message or handle differently
   }
 
   @override
@@ -383,15 +500,31 @@ class _PaymentScreenState extends State<PaymentScreen> {
     super.dispose();
   }
 
+  Future<bool> _onWillPop() async {
+    // Similar to `_exitApp()` logic
+    Get.dialog(PaymentFailedDialog(
+      orderID: widget.orderId.toString(),
+      orderAmount: widget.amount,
+      orderType: widget.orderType,
+      maxCodOrderAmount: null,
+      isCashOnDelivery: widget.isCashOnDelivery,
+      guestId: widget.guestId.toString(),
+    ));
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: CustomAppBar(title: 'payment'.tr, onBackPressed: () => Get.back()),
-      body: Center(
-        child: SizedBox(
-          width: Dimensions.webMaxWidth,
-          child: const Center(
-            child: CircularProgressIndicator(),
+    return WillPopScope(
+      onWillPop: _onWillPop,
+      child: Scaffold(
+        appBar: CustomAppBar(title: 'payment'.tr, onBackPressed: _onWillPop),
+        body: Center(
+          child: SizedBox(
+            width: Dimensions.webMaxWidth,
+            child: _isLoading
+                ? const CircularProgressIndicator()
+                : const Text('Processing Payment...', style: TextStyle(fontSize: 16)),
           ),
         ),
       ),
