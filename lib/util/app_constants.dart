@@ -5,18 +5,18 @@ import 'package:sixam_mart/util/images.dart';
 
 class AppConstants {
   static const String appName = 'MyFoodKart';
-  static const double appVersion = 3.1;
+  static const double appVersion = 8.8;
   static const String fontFamily = 'Roboto';
   static const bool payInWevView = false;
   static const int balanceInputLen = 10;
   // static const String webHostedUrl = 'https://MyFoodKart-web.6amtech.com';
   static const String webHostedUrl = 'https://6Kart.in';
   static const bool useReactWebsite = false;
-  ///........mab key.................
+  ///..........................mab key................
   // static const String googleMapKey = 'AIzaSyCaCSJ0BZItSyXqBv8vpD1N4WBffJeKhLQ';
-  ///............working.............
+  ///..........................working................
   // static const String googleMapKey = 'AIzaSyDc60dcf4WH97EvrkRclSOwfKXumPWMgjs';
-  ///................routerKey
+  ///..........................routerKey..............
   static const String googleMapKeyRouter = 'AIzaSyDc60dcf4WH97EvrkRclSOwfKXumPWMgjs';
   ///.........work......poly....
   // static const String googleMapKey = 'AIzaSyD7fSNx2zaxcHmraMpgojfk18m3y-Spk7Y';
@@ -25,12 +25,11 @@ class AppConstants {
   static const String razorpayKey = 'rzp_live_qECjJ410eV0WiM';
 
   // static const String baseUrl = 'https://MyFoodKart-admin.6amtech.com';
-///.........live...............
-//     static const String baseUrl = 'https://admin.myfoodkart.co.in';
-  ///.............live................
+  ///.........live...............
   static const String baseUrl = 'https://admin.myfoodkart.co.in';
   ///..............dev................
   // static const String baseUrl = 'https://6Kart.in';
+  static const String updatePaymentStatus = '/api/v1/update-payment-status';
   static const String categoryUri = '/api/v1/categories';
   static const String bannerUri = '/api/v1/banners';
   static const String storeItemUri = '/api/v1/items/latest';
@@ -216,6 +215,7 @@ class AppConstants {
   static const String addTaxiReviewUri = '/api/v1/rental/user/review/add';
   static const String getPopularTaxiSuggestionUri = '/api/v1/rental/vehicle/popular-suggestion/';
   static const String getProviderBannerUri = '/api/v1/rental/banners';
+
 
   /// Shared Key
   static const String theme = 'MyFoodKart_theme';

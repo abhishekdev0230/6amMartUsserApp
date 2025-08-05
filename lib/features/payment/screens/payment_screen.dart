@@ -400,8 +400,11 @@
 // }
 
 
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:pretty_http_logger/pretty_http_logger.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:sixam_mart/util/app_constants.dart';
 import 'package:sixam_mart/util/dimensions.dart';
@@ -472,9 +475,21 @@ class _PaymentScreenState extends State<PaymentScreen> {
     }
   }
 
-  void _handlePaymentSuccess(PaymentSuccessResponse response) {
-    debugPrint('Payment success: ${response.paymentId}');
-    // TODO: Confirm order via API
+  // void _handlePaymentSuccess(PaymentSuccessResponse response) {
+  //   debugPrint('Payment success: ${response.paymentId}');
+  //   // TODO: Confirm order via API
+  //   Get.back(result: true);
+  // }
+
+  void _handlePaymentSuccess(PaymentSuccessResponse response) async {
+    debugPrint('✅ Payment success: ${response.paymentId}');
+
+    // Notify backend manually
+    await updatePaymentStatusApi(
+      orderId: widget.orderId,
+      paymentStatus: "paid",
+    );
+
     Get.back(result: true);
   }
 
@@ -529,5 +544,40 @@ class _PaymentScreenState extends State<PaymentScreen> {
         ),
       ),
     );
+  }
+}
+Future<void> updatePaymentStatusApi({
+  required int orderId,
+  required String paymentStatus,
+}) async {
+  HttpWithMiddleware http = HttpWithMiddleware.build(middlewares: [
+    HttpLogger(logLevel: LogLevel.BODY),
+  ]);
+
+  try {
+    var url = "${AppConstants.baseUrl}${AppConstants.updatePaymentStatus}";
+
+    var payload = jsonEncode({
+      "order_id": orderId,
+      "payment_status": paymentStatus,
+    });
+
+    var response = await http.post(
+      Uri.parse(url),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: payload,
+    );
+
+    Map<String, dynamic> jsonResponse = jsonDecode(response.body);
+    if (jsonResponse['status'] == true) {
+      debugPrint("✅ Backend payment status updated.");
+    } else {
+      debugPrint("⚠️ Backend response: Payment not marked as success.");
+    }
+  } catch (error) {
+    debugPrint("❌ Error in updatePaymentStatusApi: $error");
   }
 }
