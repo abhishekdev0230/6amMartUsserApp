@@ -24,15 +24,20 @@
 	<string>????</string>
 	<key>CFBundleURLTypes</key>
 	<array>
+		<!-- ✅ Google Sign-In (correct scheme added) -->
 		<dict>
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.googleusercontent.apps.1000163153346-tmf9s0kpekc5mum4ubpga4a8gguk2592</string>
+				<!-- ✅ Use the REVERSED_CLIENT_ID from GoogleService-Info.plist -->
+				<string>com.googleusercontent.apps.561809267214-4upg2468h1hbj2t79eq6118vs59he38v</string>
+				<!-- ✅ Facebook scheme -->
 				<string>fb380903914182154</string>
 			</array>
 		</dict>
+
+		<!-- ✅ Existing custom app scheme -->
 		<dict>
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
@@ -42,6 +47,7 @@
 			</array>
 		</dict>
 	</array>
+
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>FacebookAppID</key>
@@ -51,7 +57,6 @@
 	<key>FacebookDisplayName</key>
 	<string>MyFoodKart</string>
 
-	<!-- ✅ Add wallet schemes here -->
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>fbapi</string>
